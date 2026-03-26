@@ -1,0 +1,51 @@
+version: "2"
+type: frontend
+tech_stack:
+  - TypeScript
+  - React
+  - Socket.io
+  - Vite
+  - Tailwind CSS
+  - Framer Motion
+routes:
+  - path: /
+    file: src/App.tsx
+    auth_required: false
+    description: Main BattleTris game lobby and play area
+features:
+  - name: Multiplayer Game Lobby
+    description: Users can enter a room ID and join a multiplayer session.
+    files:
+      - src/App.tsx
+    entry_route: /
+    user_interactions:
+      - Enter Room ID in the input field
+      - Click Join Room button
+    api_calls:
+      - method: socket.emit
+        endpoint: join-room
+    auth_required: false
+  - name: Tetris Gameplay
+    description: Core Tetris mechanics including piece movement, rotation, and line clearing.
+    files:
+      - src/useTetris.ts
+      - src/App.tsx
+    entry_route: /
+    user_interactions:
+      - Use arrow keys to move and rotate pieces
+      - Press Space for hard drop
+    auth_required: false
+  - name: Special Attack System
+    description: Players receive special pieces for clearing 2 lines and can send them to opponents.
+    files:
+      - src/useTetris.ts
+      - src/App.tsx
+    entry_route: /
+    user_interactions:
+      - Clear 2 lines to get a special piece
+      - Click SEND button to target an opponent
+    api_calls:
+      - method: socket.emit
+        endpoint: send-special
+    auth_required: false
+known_limitations: []
