@@ -78,70 +78,70 @@ export const WW2_STAGES: WW2Stage[] = [
     country: 'Berlin', 
     description: 'High-contrast shot of a Tiger tank moving through urban ruins.',
     bgUrl: '/assets/stages/panzer_advance.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
   },
   { 
     name: 'The Spitfire Patrol', 
     country: 'London', 
     description: 'A squadron of planes over the white cliffs, heavy grain filter.',
     bgUrl: '/assets/stages/spitfire_patrol.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'
   },
   { 
     name: 'The Resistance Cell', 
     country: 'Paris', 
     description: 'Low-light, moody shot of soldiers in a bombed-out basement.',
     bgUrl: '/assets/stages/resistance_cell.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
   },
   { 
     name: 'The Winter Siege', 
     country: 'Stalingrad', 
     description: 'Snow-covered ruins with a lone sniper silhouette.',
     bgUrl: '/assets/stages/winter_siege.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3'
   },
   { 
     name: 'The Beachhead', 
     country: 'Normandy', 
     description: 'Landing craft approaching a foggy shore under heavy fire.',
     bgUrl: '/assets/stages/beachhead.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'
   },
   { 
     name: 'The Urban Ruin', 
     country: 'Warsaw', 
     description: 'A destroyed city street with a single flag hanging from a balcony.',
     bgUrl: '/assets/stages/urban_ruin.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3'
   },
   { 
     name: 'The Naval Convoy', 
     country: 'Atlantic', 
     description: 'Warships in a stormy sea with anti-aircraft fire in the sky.',
     bgUrl: '/assets/stages/naval_convoy.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3'
   },
   { 
     name: 'The Paratrooper Drop', 
     country: 'Europe', 
     description: 'Hundreds of parachutes filling a moonlit sky.',
     bgUrl: '/assets/stages/paratrooper_drop.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3'
   },
   { 
     name: 'The Artillery Battery', 
     country: 'Frontline', 
     description: 'Large cannons firing into the distance at night.',
     bgUrl: '/assets/stages/artillery_battery.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3'
   },
   { 
     name: 'The Victory Parade', 
     country: 'Global', 
     description: 'Soldiers marching through a liberated city square.',
     bgUrl: '/assets/stages/victory_parade.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3'
   },
 ];
 

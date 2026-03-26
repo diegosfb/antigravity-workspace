@@ -3,16 +3,16 @@
  * 
  * Replace these URLs with your own sound clips.
  * You can use absolute URLs (https://...) or local paths if you upload files to the project.
- * Version: 1.0.2 (Cache breaker)
+ * Version: 1.1.0 (Cache breaker)
  */
 export const AUDIO_CONFIG = {
   music: {
     // Background music for the initial splash screen
-    splash: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    splash: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     // Background music for the lobby/waiting room
-    lobby: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+    lobby: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
     // Background music during active gameplay
-    game: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+    game: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
   },
   sfx: {
     // Sound played when a "bomb" is dropped
@@ -27,11 +27,29 @@ export const AUDIO_CONFIG = {
   voices: {
     // Clips played when YOU send a move
     sending: [
-      // "https://your-site.com/sounds/fire-1.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip0.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip1.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip2.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip3.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip4.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip5.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip6.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip7.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip8.mp3",
+      "/assets/stages/sounds/AttackSend/AttackSend_clip9.mp3",
     ],
     // Clips played when YOU receive a move
     receiving: [
-      // "https://your-site.com/sounds/incoming-1.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip0.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip1.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip2.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip3.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip4.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip5.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip6.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip7.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip8.mp3",
+      "/assets/stages/sounds/AttackReceive/AttackReceive_clip9.mp3",
     ],
     // General military commands played during the match
     commands: [

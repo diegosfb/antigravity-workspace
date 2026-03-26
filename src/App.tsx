@@ -1,4 +1,4 @@
-// App.tsx - Version: 1.0.3 (Cache breaker)
+// App.tsx - Version: 1.1.0 (Cache breaker)
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'motion/react';
@@ -51,18 +51,24 @@ export default function App() {
   const onLineClear = useCallback((lines: number) => {
     socket.emit('lines-cleared', { roomId, lines });
     
-    // Play explosion for any line clear
+    // Play sound for any line clear
     if (!isMuted) {
+      // Always play explosion on line clear
       ww2AudioService.playExplosion();
+      
+      // If sending garbage (2 or more lines), also play sending lines (AttackSend clips)
+      // Added a small delay so they don't overlap perfectly and potentially get blocked
+      if (lines >= 2) {
+        setTimeout(() => {
+          ww2AudioService.playSendingLines();
+        }, 150);
+      }
     }
 
     if (lines >= 2) {
       socket.emit('send-garbage', { roomId, lines: lines - 1 });
-      if (gameState.ww2Mode && !isMuted) {
-        ww2AudioService.playSendingLines();
-      }
     }
-  }, [roomId, socket, gameState.ww2Mode, isMuted]);
+  }, [roomId, socket, isMuted]);
 
   const {
     board,
@@ -294,9 +300,9 @@ export default function App() {
   const testSound = async () => {
     console.log("Testing sound system...");
     await ww2AudioService.resume();
-    // Play explosion immediately (no API key needed)
+    // Play explosion immediately
     ww2AudioService.playExplosion();
-    // Play voice command (needs API key)
+    // Play voice command if clips are present
     setTimeout(() => {
       ww2AudioService.playGeneralCommand();
     }, 500);
