@@ -1,0 +1,16 @@
+GCP Deploy Instructions
+
+1) Login to your GCP Account:
+On Terminal Run: gcloud auth login
+
+2) Select your Free Tier project:
+On Terminal Run: gcloud config set project bettertris
+
+3) Go to the sourcode folder
+On Terminal Run: cd /Users/diego.brihuega/Documents/Projects/BattleTris/BetterTris-v2
+
+4) Run deploy command
+On Terminal Run: gcloud run deploy battletris-server --source . --region us-central1 --allow-unauthenticated
+
+
+
