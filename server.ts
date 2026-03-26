@@ -230,16 +230,30 @@ async function startServer() {
     });
 
     socket.on("navigate-level", ({ roomId, direction }) => {
-      const room = rooms.get(roomId);
-      if (!room || !room.debugMode || room.status !== 'playing') return;
+      const rId = String(roomId);
+      const room = rooms.get(rId);
+      console.log(`Navigate level request: room=${rId}, direction=${direction}, found=${!!room}`);
+      
+      if (!room || !room.debugMode || room.status !== 'playing') {
+        console.log(`Navigate level rejected: room=${!!room}, debug=${room?.debugMode}, status=${room?.status}`);
+        return;
+      }
 
       if (direction === 'next') {
         room.currentStageIndex = (room.currentStageIndex + 1) % 10;
+        room.currentLevel++;
       } else {
         room.currentStageIndex = (room.currentStageIndex - 1 + 10) % 10;
+        if (room.currentLevel > 1) {
+          room.currentLevel--;
+        }
       }
 
-      io.to(roomId).emit("room-update", {
+      // Recalculate speed based on current level
+      room.baseSpeedMultiplier = Math.pow(1 - (room.speedIncreasePercent / 100), room.currentLevel - 1);
+      console.log(`New level: ${room.currentLevel}, speed: ${room.baseSpeedMultiplier}`);
+
+      io.to(rId).emit("room-update", {
         players: Array.from(room.players.values()),
         status: room.status,
         attackSpeedMultiplier: room.attackSpeedMultiplier,

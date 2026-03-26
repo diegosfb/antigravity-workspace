@@ -1,4 +1,4 @@
-// App.tsx - Version: 1.0.2 (Cache breaker)
+// App.tsx - Version: 1.0.3 (Cache breaker)
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'motion/react';
@@ -235,6 +235,7 @@ export default function App() {
   };
 
   const navigateLevel = (direction: 'prev' | 'next') => {
+    console.log('Emitting navigate-level:', direction, roomId);
     socket.emit('navigate-level', { roomId, direction });
   };
 
@@ -545,21 +546,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* WW2 Mode Toggle */}
+                {/* Settings Toggles */}
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between p-3 bg-neutral-800 rounded-xl border border-neutral-700">
-                    <div className="flex items-center gap-2">
-                      <Music className="w-4 h-4 text-orange-500" />
-                      <span className="text-xs font-bold uppercase tracking-widest">WW2 Mode</span>
-                    </div>
-                    <button
-                      onClick={() => updateSettings({ ww2Mode: !gameState.ww2Mode })}
-                      className={`w-10 h-5 rounded-full transition-colors relative ${gameState.ww2Mode ? 'bg-orange-500' : 'bg-neutral-600'}`}
-                    >
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${gameState.ww2Mode ? 'left-6' : 'left-1'}`} />
-                    </button>
-                  </div>
-
                   <div className="flex items-center justify-between p-3 bg-neutral-800 rounded-xl border border-neutral-700">
                     <div className="flex items-center gap-2">
                       <Volume2 className="w-4 h-4 text-purple-500" />
@@ -570,6 +558,19 @@ export default function App() {
                       className={`w-10 h-5 rounded-full transition-colors relative ${gameState.backgroundMusicEnabled ? 'bg-purple-500' : 'bg-neutral-600'}`}
                     >
                       <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${gameState.backgroundMusicEnabled ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-neutral-800 rounded-xl border border-neutral-700">
+                    <div className="flex items-center gap-2">
+                      <Music className="w-4 h-4 text-orange-500" />
+                      <span className="text-xs font-bold uppercase tracking-widest">WW2 Mode</span>
+                    </div>
+                    <button
+                      onClick={() => updateSettings({ ww2Mode: !gameState.ww2Mode })}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${gameState.ww2Mode ? 'bg-orange-500' : 'bg-neutral-600'}`}
+                    >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${gameState.ww2Mode ? 'left-6' : 'left-1'}`} />
                     </button>
                   </div>
                 </div>
