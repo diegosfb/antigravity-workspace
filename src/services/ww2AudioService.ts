@@ -24,23 +24,42 @@ class WW2AudioService {
     await this.getAudioContext();
   }
 
+  // Cache for decoded audio buffers to improve performance
+  private audioBuffers: Map<string, AudioBuffer> = new Map();
+
   private async playFromUrl(url: string) {
     if (!url) return;
     console.log(`Attempting to play: ${url}`);
     try {
-      const audio = new Audio(url);
-      // Simpler play logic to avoid event-based hangs
-      await audio.play();
-      console.log(`Successfully playing: ${url}`);
+      const context = await this.getAudioContext();
+      
+      // Load and decode the audio if not cached
+      if (!this.audioBuffers.has(url)) {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error, status = ${response.status}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const decodedData = await context.decodeAudioData(arrayBuffer);
+        this.audioBuffers.set(url, decodedData);
+      }
+
+      const buffer = this.audioBuffers.get(url)!;
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(context.destination);
+      source.start(0);
+      
+      console.log(`Successfully playing via AudioContext: ${url}`);
     } catch (e) {
       console.warn(`Audio play failed for ${url}:`, e);
-      // Try to resume context and play again
+      // Fallback try with HTMLAudioElement just in case
       try {
-        await this.resume();
         const audio = new Audio(url);
         await audio.play();
+        console.log(`Successfully playing via fallback Audio: ${url}`);
       } catch (err) {
-        console.error("Second attempt failed:", err);
+        console.error("Fallback audio attempt failed:", err);
       }
     }
   }

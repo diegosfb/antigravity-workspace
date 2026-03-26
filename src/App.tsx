@@ -95,6 +95,9 @@ export default function App() {
   const sendSpecial = (targetId: string, type: string, index: number) => {
     socket.emit('send-special', { roomId, targetId, type });
     setSpecials(prev => prev.filter((_, i) => i !== index));
+    if (!isMuted) {
+      ww2AudioService.playSendingLines();
+    }
   };
 
   useEffect(() => {
@@ -165,6 +168,9 @@ export default function App() {
 
     socket.on('receive-special', ({ type }) => {
       setForcedNextPiece(type);
+      if (gameState.ww2Mode && !isMuted) {
+        ww2AudioService.playReceivingLines();
+      }
     });
 
     socket.on('game-over-all', ({ winnerId }) => {
