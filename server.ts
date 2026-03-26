@@ -14,7 +14,7 @@ async function startServer() {
     },
   });
 
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   // Game state management
   const rooms = new Map<string, {
