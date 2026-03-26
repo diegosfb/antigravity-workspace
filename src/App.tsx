@@ -1,3 +1,4 @@
+// App.tsx - Version: 1.0.2 (Cache breaker)
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'motion/react';
@@ -5,6 +6,8 @@ import { Trophy, Users, Play, LogIn, Crown, Ghost, Wifi, WifiOff, Zap, Plus, Mus
 import { useTetris } from './useTetris';
 import Board from './components/Board';
 import { GameState, Player, ROWS, COLS, WW2_STAGES } from './constants';
+import { ww2AudioService } from './services/ww2AudioService';
+import { AUDIO_CONFIG } from './audioConfig';
 
 export default function App() {
   const socket = useMemo(() => {
@@ -25,7 +28,7 @@ export default function App() {
     players: [],
     status: 'waiting',
     attackSpeedMultiplier: 0.33,
-    ww2Mode: false,
+    ww2Mode: true,
     levelIntervalMinutes: 5,
     speedIncreasePercent: 25,
     levelLineThreshold: 10,
@@ -33,6 +36,7 @@ export default function App() {
     currentStageIndex: 0,
     baseSpeedMultiplier: 1.0,
     debugMode: true,
+    backgroundMusicEnabled: true,
   });
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
@@ -46,10 +50,19 @@ export default function App() {
 
   const onLineClear = useCallback((lines: number) => {
     socket.emit('lines-cleared', { roomId, lines });
+    
+    // Play explosion for any line clear
+    if (!isMuted) {
+      ww2AudioService.playExplosion();
+    }
+
     if (lines >= 2) {
       socket.emit('send-garbage', { roomId, lines: lines - 1 });
+      if (gameState.ww2Mode && !isMuted) {
+        ww2AudioService.playSendingLines();
+      }
     }
-  }, [roomId, socket]);
+  }, [roomId, socket, gameState.ww2Mode, isMuted]);
 
   const {
     board,
@@ -77,6 +90,37 @@ export default function App() {
     socket.emit('send-special', { roomId, targetId, type });
     setSpecials(prev => prev.filter((_, i) => i !== index));
   };
+
+  useEffect(() => {
+    const handleInteraction = () => {
+      ww2AudioService.resume();
+      if (audioRef.current && audioRef.current.paused && gameState.ww2Mode && gameState.backgroundMusicEnabled && !isGameOver && !isMuted) {
+        audioRef.current.play().catch(e => console.log("Audio play failed on interaction:", e));
+      }
+    };
+
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+  }, [gameState.ww2Mode, gameState.status, isGameOver, isMuted]);
+
+  useEffect(() => {
+    let commandInterval: NodeJS.Timeout;
+    if (gameState.ww2Mode && gameState.status === 'playing' && !isGameOver && !isMuted) {
+      commandInterval = setInterval(() => {
+        if (Math.random() > 0.7) { // 30% chance every 15 seconds
+          ww2AudioService.playGeneralCommand();
+        }
+      }, 15000);
+    }
+
+    return () => {
+      if (commandInterval) clearInterval(commandInterval);
+    };
+  }, [gameState.ww2Mode, gameState.status, isGameOver, isMuted]);
 
   useEffect(() => {
     const handleConnect = () => setIsConnected(true);
@@ -108,6 +152,9 @@ export default function App() {
 
     socket.on('receive-garbage', ({ lines }) => {
       addGarbage(lines);
+      if (gameState.ww2Mode && !isMuted) {
+        ww2AudioService.playReceivingLines();
+      }
     });
 
     socket.on('receive-special', ({ type }) => {
@@ -193,17 +240,41 @@ export default function App() {
 
   // Audio management
   useEffect(() => {
-    if (gameState.ww2Mode && gameState.status === 'playing' && !isGameOver) {
+    const isPlaying = gameState.status === 'playing' && !isGameOver;
+    const isWaiting = gameState.status === 'waiting';
+    const isSplash = !inRoom;
+    
+    if (gameState.ww2Mode && gameState.backgroundMusicEnabled) {
       const stage = WW2_STAGES[gameState.currentStageIndex];
-      if (!audioRef.current) {
-        audioRef.current = new Audio(stage.audioUrl);
-        audioRef.current.loop = true;
-      } else if (audioRef.current.src !== stage.audioUrl) {
-        audioRef.current.src = stage.audioUrl;
-      }
+      // Splash music, Lobby music, or Stage music
+      let targetUrl = '';
+      if (isPlaying) targetUrl = stage.audioUrl;
+      else if (isWaiting) targetUrl = AUDIO_CONFIG.music.lobby;
+      else if (isSplash) targetUrl = AUDIO_CONFIG.music.splash;
       
-      audioRef.current.muted = isMuted;
-      audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+      if (targetUrl) {
+        if (!audioRef.current) {
+          audioRef.current = new Audio(targetUrl);
+          audioRef.current.loop = true;
+        } else if (audioRef.current.src !== targetUrl) {
+          audioRef.current.src = targetUrl;
+        }
+        
+        audioRef.current.muted = isMuted;
+        if (!isMuted) {
+          audioRef.current.play().then(() => {
+            console.log("Background music playing successfully:", targetUrl);
+          }).catch(e => {
+            console.warn("Background audio play failed:", e);
+          });
+        } else {
+          audioRef.current.pause();
+        }
+      } else {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+      }
     } else {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -215,9 +286,20 @@ export default function App() {
         audioRef.current.pause();
       }
     };
-  }, [gameState.ww2Mode, gameState.status, gameState.currentStageIndex, isGameOver, isMuted]);
+  }, [gameState.ww2Mode, gameState.status, gameState.currentStageIndex, gameState.backgroundMusicEnabled, isGameOver, isMuted, inRoom]);
 
   const currentStage = WW2_STAGES[gameState.currentStageIndex];
+
+  const testSound = async () => {
+    console.log("Testing sound system...");
+    await ww2AudioService.resume();
+    // Play explosion immediately (no API key needed)
+    ww2AudioService.playExplosion();
+    // Play voice command (needs API key)
+    setTimeout(() => {
+      ww2AudioService.playGeneralCommand();
+    }, 500);
+  };
 
   if (!inRoom) {
     return (
@@ -272,6 +354,15 @@ export default function App() {
                   <div className="text-left">
                     <div className="text-lg leading-none">JOIN MATCH</div>
                     <div className="text-[10px] text-neutral-500 font-normal mt-1">Enter a room code to play</div>
+                  </div>
+                </button>
+                <button
+                  onClick={testSound}
+                  className="w-full bg-neutral-900 hover:bg-neutral-800 text-neutral-400 font-bold p-4 rounded-2xl flex items-center justify-center gap-3 transition-all transform active:scale-95 border border-neutral-800"
+                >
+                  <Volume2 className="w-5 h-5 text-orange-500" />
+                  <div className="text-left">
+                    <div className="text-sm leading-none uppercase tracking-widest">Test Sound System</div>
                   </div>
                 </button>
               </div>
@@ -379,7 +470,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+      <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
         
         {/* Left Sidebar - Player Info */}
         <div className="lg:col-span-3 space-y-6">
@@ -455,18 +546,41 @@ export default function App() {
                 </div>
 
                 {/* WW2 Mode Toggle */}
-                <div className="flex items-center justify-between p-3 bg-neutral-800 rounded-xl border border-neutral-700">
-                  <div className="flex items-center gap-2">
-                    <Music className="w-4 h-4 text-orange-500" />
-                    <span className="text-xs font-bold uppercase tracking-widest">WW2 Mode</span>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between p-3 bg-neutral-800 rounded-xl border border-neutral-700">
+                    <div className="flex items-center gap-2">
+                      <Music className="w-4 h-4 text-orange-500" />
+                      <span className="text-xs font-bold uppercase tracking-widest">WW2 Mode</span>
+                    </div>
+                    <button
+                      onClick={() => updateSettings({ ww2Mode: !gameState.ww2Mode })}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${gameState.ww2Mode ? 'bg-orange-500' : 'bg-neutral-600'}`}
+                    >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${gameState.ww2Mode ? 'left-6' : 'left-1'}`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => updateSettings({ ww2Mode: !gameState.ww2Mode })}
-                    className={`w-10 h-5 rounded-full transition-colors relative ${gameState.ww2Mode ? 'bg-orange-500' : 'bg-neutral-600'}`}
-                  >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${gameState.ww2Mode ? 'left-6' : 'left-1'}`} />
-                  </button>
+
+                  <div className="flex items-center justify-between p-3 bg-neutral-800 rounded-xl border border-neutral-700">
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-purple-500" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Background Music</span>
+                    </div>
+                    <button
+                      onClick={() => updateSettings({ backgroundMusicEnabled: !gameState.backgroundMusicEnabled })}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${gameState.backgroundMusicEnabled ? 'bg-purple-500' : 'bg-neutral-600'}`}
+                    >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${gameState.backgroundMusicEnabled ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
                 </div>
+
+                <button
+                  onClick={testSound}
+                  className="w-full p-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl border border-neutral-700 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Volume2 className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Test Sound System</span>
+                </button>
 
                 {gameState.ww2Mode && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -689,7 +803,7 @@ export default function App() {
             </AnimatePresence>
           </div>
           
-          <div className="mt-8 grid grid-cols-2 gap-8 w-full max-w-[300px]">
+          <div className="mt-8 grid grid-cols-2 gap-8 w-full max-w-[400px]">
             <div className="text-center">
               <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Score</div>
               <div className="text-3xl font-black italic">{score}</div>

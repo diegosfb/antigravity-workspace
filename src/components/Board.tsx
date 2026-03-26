@@ -11,7 +11,7 @@ interface BoardProps {
 }
 
 const Board: React.FC<BoardProps> = ({ board, activePiece, isSmall = false }) => {
-  const size = isSmall ? 12 : BLOCK_SIZE;
+  const size = isSmall ? 18 : BLOCK_SIZE;
   
   const displayBoard = useMemo(() => {
     const display = Array(ROWS).fill(0).map((_, y) => 

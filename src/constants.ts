@@ -1,6 +1,6 @@
 export const COLS = 10;
 export const ROWS = 20;
-export const BLOCK_SIZE = 30;
+export const BLOCK_SIZE = 40;
 
 export const COLORS = [
   'transparent',
@@ -106,14 +106,14 @@ export const WW2_STAGES: WW2Stage[] = [
     country: 'Normandy', 
     description: 'Landing craft approaching a foggy shore under heavy fire.',
     bgUrl: '/assets/stages/beachhead.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'
   },
   { 
     name: 'The Urban Ruin', 
     country: 'Warsaw', 
     description: 'A destroyed city street with a single flag hanging from a balcony.',
     bgUrl: '/assets/stages/urban_ruin.jpg',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'
   },
   { 
     name: 'The Naval Convoy', 
@@ -159,4 +159,5 @@ export interface GameState {
   baseSpeedMultiplier: number;
   levelLineThreshold: number;
   debugMode: boolean;
+  backgroundMusicEnabled: boolean;
 }

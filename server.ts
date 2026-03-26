@@ -39,6 +39,7 @@ async function startServer() {
     gameStartTime?: number;
     levelTimer?: NodeJS.Timeout;
     debugMode: boolean;
+    backgroundMusicEnabled: boolean;
   }>();
 
   function levelUp(roomId: string) {
@@ -62,6 +63,7 @@ async function startServer() {
       currentStageIndex: room.currentStageIndex,
       baseSpeedMultiplier: room.baseSpeedMultiplier,
       debugMode: room.debugMode,
+      backgroundMusicEnabled: room.backgroundMusicEnabled,
     });
 
     io.to(roomId).emit("level-up", {
@@ -86,7 +88,7 @@ async function startServer() {
           status: 'waiting',
           attackSpeedMultiplier: 0.33, // Default 200% faster (0.33x interval)
           ownerId: socket.id, // Set the first player as owner
-          ww2Mode: false,
+          ww2Mode: true,
           levelIntervalMinutes: 5,
           speedIncreasePercent: 25,
           levelLineThreshold: 10,
@@ -94,6 +96,7 @@ async function startServer() {
           currentStageIndex: 0,
           baseSpeedMultiplier: 1.0,
           debugMode: true,
+          backgroundMusicEnabled: true,
         });
       }
 
@@ -122,10 +125,11 @@ async function startServer() {
         currentStageIndex: room.currentStageIndex,
         baseSpeedMultiplier: room.baseSpeedMultiplier,
         debugMode: room.debugMode,
+        backgroundMusicEnabled: room.backgroundMusicEnabled,
       });
     });
 
-    socket.on("update-settings", ({ roomId, attackSpeedMultiplier, ww2Mode, levelIntervalMinutes, speedIncreasePercent, levelLineThreshold }) => {
+    socket.on("update-settings", ({ roomId, attackSpeedMultiplier, ww2Mode, levelIntervalMinutes, speedIncreasePercent, levelLineThreshold, backgroundMusicEnabled }) => {
       const room = rooms.get(roomId);
       if (!room) return;
 
@@ -136,6 +140,7 @@ async function startServer() {
         if (levelIntervalMinutes !== undefined) room.levelIntervalMinutes = levelIntervalMinutes;
         if (speedIncreasePercent !== undefined) room.speedIncreasePercent = speedIncreasePercent;
         if (levelLineThreshold !== undefined) room.levelLineThreshold = levelLineThreshold;
+        if (backgroundMusicEnabled !== undefined) room.backgroundMusicEnabled = backgroundMusicEnabled;
 
         io.to(roomId).emit("room-update", {
           players: Array.from(room.players.values()),
@@ -150,6 +155,7 @@ async function startServer() {
           currentStageIndex: room.currentStageIndex,
           baseSpeedMultiplier: room.baseSpeedMultiplier,
           debugMode: room.debugMode,
+          backgroundMusicEnabled: room.backgroundMusicEnabled,
         });
       }
     });
@@ -196,6 +202,7 @@ async function startServer() {
         currentStageIndex: room.currentStageIndex,
         baseSpeedMultiplier: room.baseSpeedMultiplier,
         debugMode: room.debugMode,
+        backgroundMusicEnabled: room.backgroundMusicEnabled,
       });
     });
 
@@ -245,6 +252,7 @@ async function startServer() {
         currentStageIndex: room.currentStageIndex,
         baseSpeedMultiplier: room.baseSpeedMultiplier,
         debugMode: room.debugMode,
+        backgroundMusicEnabled: room.backgroundMusicEnabled,
       });
     });
 
