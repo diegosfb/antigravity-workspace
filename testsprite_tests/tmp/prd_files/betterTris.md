@@ -1,0 +1,2 @@
+Create a multiplayer tetris where 2 or more players are playing tetris and the one that wins is the one that lasts the longer.
+I want the users to be able to create a multiplayer match and other users can join an play in the group
