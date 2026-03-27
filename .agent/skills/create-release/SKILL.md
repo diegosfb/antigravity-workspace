@@ -20,23 +20,28 @@ description: Orchestrates a full production release: runs tests, increments mino
     - This will increment the middle version (e.g., 2.1.1 -> 2.2.0) and update the build date.
 4.  **Confirm Changes**: Verify `package.json` and `src/App.tsx`.
 
-### Phase 3: Git Operations
-5.  **Commit Release**: Stage and commit with the prefix `[RELEASE]`:
+### Phase 3: Integration (Merge to Main)
+5.  **Merge to Main**: Before tagging and deploying, ensure the branch is merged into `main`:
     ```bash
-    git add .
-    git commit -m "[RELEASE] v<version>: <summary of changes>"
+    git checkout main
+    git pull origin main --rebase
+    git merge <feature-branch>
+    git push origin main
     ```
-6.  **Tag Version**: Create a git tag:
+
+### Phase 4: Git Tagging
+6.  **Tag Version**: Create a git tag on the `main` branch:
     ```bash
     git tag -a v<version> -m "Release v<version>"
+    git push origin main --tags
     ```
-7.  **Push**: `git push origin <branch> --tags`.
 
-### Phase 4: Multi-Cloud Deployment
-8.  **Deploy to GCP**: Invoke `@gcp-deploy`.
-9.  **Deploy to AWS**: Invoke `@aws-deploy`.
-10. **Deploy to Render**:
-    - Ensure code is pushed (Step 7). Render auto-deploys on push to the linked branch.
+### Phase 5: Multi-Cloud Deployment
+7.  **Deploy to GCP**: Invoke `@gcp-deploy` (Ensure you are on `main`).
+8.  **Deploy to AWS**: Invoke `@aws-deploy` (Ensure you are on `main`).
+9.  **Deploy to Render**:
+    - Ensure code is pushed to `main`. Render auto-deploys from `main`.
+    - Production URL: `https://battletris-server.onrender.com/`
     - Confirm the deployment status on the Render dashboard for `battletris-server`.
     - Production URL: `https://battletris-server.onrender.com/`
 
