@@ -52,6 +52,7 @@ export default function App() {
   const [winner, setWinner] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Collapsed by default on mobile
+  const [attackNotification, setAttackNotification] = useState<{attackerName: string, type: 'garbage' | 'special', id: number} | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Detect mobile vs desktop
@@ -198,15 +199,17 @@ export default function App() {
       }));
     });
 
-    socket.on('receive-garbage', ({ lines }) => {
+    socket.on('receive-garbage', ({ lines, attackerName }) => {
       addGarbage(lines);
+      setAttackNotification({ attackerName, type: 'garbage', id: Date.now() });
       if (gameState.ww2Mode && !isMuted) {
         ww2AudioService.playReceivingLines();
       }
     });
 
-    socket.on('receive-special', ({ type }) => {
+    socket.on('receive-special', ({ type, attackerName }) => {
       setForcedNextPiece(type);
+      setAttackNotification({ attackerName, type: 'special', id: Date.now() });
       if (gameState.ww2Mode && !isMuted) {
         ww2AudioService.playReceivingLines();
       }
@@ -227,7 +230,17 @@ export default function App() {
       socket.off('receive-special');
       socket.off('game-over-all');
     };
-  }, [resetGame, addGarbage, setIsPaused, setForcedNextPiece, socket]);
+  }, [resetGame, addGarbage, setIsPaused, setForcedNextPiece, socket, isMuted, gameState.ww2Mode]);
+
+  // Clear attack notification after timeout
+  useEffect(() => {
+    if (attackNotification) {
+      const timer = setTimeout(() => {
+        setAttackNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [attackNotification]);
 
   useEffect(() => {
     if (gameState.status === 'playing' && !isGameOver) {
@@ -497,7 +510,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.7.3-debug | 2026-03-27
+            v2.7.4-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -718,6 +731,36 @@ export default function App() {
                 </div>
               )}
 
+              <AnimatePresence>
+                {attackNotification && (
+                  <motion.div
+                    key={attackNotification.id}
+                    initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                    className={`p-4 rounded-3xl border backdrop-blur-md mb-6 flex items-center gap-3 shadow-lg ${
+                      attackNotification.type === 'garbage' 
+                        ? 'bg-red-500/20 border-red-500/50 text-red-400' 
+                        : 'bg-purple-500/20 border-purple-500/50 text-purple-400'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl ${
+                      attackNotification.type === 'garbage' ? 'bg-red-500' : 'bg-purple-500'
+                    } text-white`}>
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest leading-none mb-1 opacity-70">
+                        Incoming Attack
+                      </div>
+                      <div className="text-sm font-black italic uppercase">
+                        By {attackNotification.attackerName}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="bg-neutral-900/80 backdrop-blur-md p-6 rounded-3xl border border-neutral-800">
                 <h2 className="font-bold uppercase tracking-widest text-sm text-neutral-400 mb-2">Room Code</h2>
                 <div className="text-2xl font-mono font-bold text-orange-500">{roomId}</div>
@@ -851,7 +894,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.7.3-debug | 2026-03-27
+          v2.7.4-debug | 2026-03-27
         </div>
       </div>
     </div>

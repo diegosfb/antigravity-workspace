@@ -351,17 +351,21 @@ async function startServer() {
       "send-garbage",
       safe<{ roomId: string; lines: number }>(({ roomId, lines }) => {
         const sanitizedLines = Math.min(Math.max(1, lines), 8); // clamp 1-8
-        socket.to(roomId).emit("receive-garbage", { lines: sanitizedLines });
+        const room = rooms.get(roomId);
+        const attackerName = room?.players.get(socket.id)?.name || "Unknown";
+        socket.to(roomId).emit("receive-garbage", { lines: sanitizedLines, attackerName });
       })
     );
 
     // ── send-special ──────────────────────────────────────────────────────────
     socket.on(
       "send-special",
-      safe<{ roomId: string; targetId: string; type: string }>(({ targetId, type }) => {
+      safe<{ roomId: string; targetId: string; type: string }>(({ roomId, targetId, type }) => {
         const allowedTypes = ["I", "O", "T", "S", "Z", "J", "L"];
         if (!allowedTypes.includes(type)) return; // prevent injection
-        io.to(targetId).emit("receive-special", { type });
+        const room = rooms.get(roomId);
+        const attackerName = room?.players.get(socket.id)?.name || "Unknown";
+        io.to(targetId).emit("receive-special", { type, attackerName });
       })
     );
 
