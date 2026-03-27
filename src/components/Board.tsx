@@ -8,10 +8,11 @@ interface BoardProps {
     matrix: number[][];
   } | null;
   isSmall?: boolean;
+  blockSize?: number;
 }
 
-const Board: React.FC<BoardProps> = ({ board, activePiece, isSmall = false }) => {
-  const size = isSmall ? 18 : BLOCK_SIZE;
+const Board: React.FC<BoardProps> = ({ board, activePiece, isSmall = false, blockSize }) => {
+  const size = isSmall ? 18 : (blockSize ?? BLOCK_SIZE);
   
   const displayBoard = useMemo(() => {
     const display = Array(ROWS).fill(0).map((_, y) => 

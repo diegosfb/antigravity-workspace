@@ -1,5 +1,6 @@
 // App.tsx - Version: 1.1.0 (Cache breaker)
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Users, Play, LogIn, Crown, Ghost, Wifi, WifiOff, Zap, Plus, Music, Volume2, VolumeX, Clock, TrendingUp, MapPin } from 'lucide-react';
@@ -42,6 +43,22 @@ export default function App() {
   const [winner, setWinner] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Compute the block size dynamically so the board always fits in the viewport
+  const [blockSize, setBlockSize] = useState(30);
+  useEffect(() => {
+    const compute = () => {
+      // Reserve: 16px top padding + 16px bottom padding + 80px score panel + 8px gap
+      const reserved = 16 + 16 + 80 + 8;
+      const available = window.innerHeight - reserved;
+      const size = Math.floor(available / ROWS);
+      setBlockSize(Math.max(20, Math.min(size, 40)));
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+
 
   const onGameOver = useCallback(() => {
     setIsGameOver(true);
@@ -316,7 +333,7 @@ export default function App() {
 
   if (!inRoom) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
+      <div className="h-screen overflow-hidden bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -462,7 +479,7 @@ export default function App() {
   const opponents = gameState.players.filter(p => p.id !== socket.id);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white p-4 lg:p-8 font-sans relative overflow-hidden">
+    <div className="h-screen overflow-hidden bg-neutral-950 text-white p-2 lg:p-4 font-sans relative flex flex-col">
       {/* WW2 Background */}
       <AnimatePresence mode="wait">
         {gameState.ww2Mode && (
@@ -483,10 +500,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+      <div className="flex-1 max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 relative z-10 min-h-0">
         
         {/* Left Sidebar - Player Info */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-4 overflow-y-auto h-full pr-1 scrollbar-hide">
           <div className="bg-neutral-900/80 backdrop-blur-md p-6 rounded-3xl border border-neutral-800">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -764,9 +781,10 @@ export default function App() {
         </div>
 
         {/* Main Game Area */}
-        <div className="lg:col-span-6 flex flex-col items-center">
+        <div className="lg:col-span-6 flex flex-col items-center justify-center h-full min-h-0">
           <div className="relative">
-            <Board board={board} activePiece={activePiece} />
+            <Board board={board} activePiece={activePiece} blockSize={blockSize} />
+
             
             <AnimatePresence>
               {gameState.status === 'waiting' && (
@@ -829,7 +847,7 @@ export default function App() {
         </div>
 
         {/* Right Sidebar - Opponents */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-4 overflow-y-auto h-full pr-1 scrollbar-hide">
           <h2 className="font-bold uppercase tracking-widest text-sm text-neutral-400">Opponents</h2>
           <div className="grid grid-cols-1 gap-6">
             {opponents.map(opp => (
