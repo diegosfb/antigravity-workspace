@@ -65,8 +65,8 @@ export default function App() {
       setIsMobile(mobile);
 
       // Reserve space based on orientation/device
-      // On mobile: Container padding (16) + Sidebar Toggle (60) + HUD (120) + Opponents (140) + Buffer (20)
-      const reserved = mobile ? 356 : (16 + 16 + 80 + 8);
+      // On mobile: Container padding (16) + Sidebar Toggle (60) + HUD (120) + Opponents (144) + Buffer (32)
+      const reserved = mobile ? 372 : (16 + 16 + 80 + 8);
       const availableHeight = window.innerHeight - reserved;
       const availableWidth = window.innerWidth - (mobile ? 32 : (window.innerWidth * 0.4));
 
@@ -497,7 +497,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.7.2-debug | 2026-03-27
+            v2.7.3-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -806,17 +806,17 @@ export default function App() {
         </div>
 
         {/* Opponents Section */}
-        <div className={`${isMobile ? 'h-32 w-full overflow-x-auto overflow-y-hidden pb-1 scrollbar-hide' : 'lg:col-span-3 h-full overflow-y-auto pr-1 scrollbar-hide'} space-y-4`}>
+        <div className={`${isMobile ? 'h-36 w-full overflow-x-auto overflow-y-hidden pb-1 scrollbar-hide' : 'lg:col-span-3 h-full overflow-y-auto pr-1 scrollbar-hide'} space-y-4`}>
           {!isMobile && <h2 className="font-bold uppercase tracking-widest text-sm text-neutral-400">Opponents</h2>}
           <div className={`${isMobile ? 'flex flex-row gap-4 h-full items-center px-4' : 'grid grid-cols-1 gap-6'}`}>
             {opponents.map(opp => (
-              <div key={opp.id} className={`bg-neutral-900/80 backdrop-blur-md p-2 rounded-2xl border border-neutral-800 relative overflow-hidden flex-shrink-0 ${isMobile ? 'w-24 h-28' : 'p-4 rounded-3xl'}`}>
+              <div key={opp.id} className={`bg-neutral-900/80 backdrop-blur-md p-2 rounded-2xl border border-neutral-800 relative overflow-hidden flex-shrink-0 ${isMobile ? 'w-24 h-32' : 'p-4 rounded-3xl'}`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-bold text-[8px] lg:text-sm truncate max-w-[40px] lg:max-w-[100px]">{opp.name}</span>
                   <span className="text-[8px] lg:text-xs font-mono text-neutral-500">{opp.score}</span>
                 </div>
-                <div className={`flex justify-center origin-top ${isMobile ? 'scale-[0.3]' : 'scale-75'}`}>
-                  <Board board={opp.board} isSmall />
+                <div className="flex justify-center">
+                  <Board board={opp.board} blockSize={isMobile ? 5 : 12} />
                 </div>
                 {specials.length > 0 && !opp.isGameOver && (
                   <div className={`${isMobile ? 'absolute bottom-1 right-1' : 'mt-4 flex gap-2 justify-center'}`}>
@@ -851,7 +851,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.7.2-debug | 2026-03-27
+          v2.7.3-debug | 2026-03-27
         </div>
       </div>
     </div>
