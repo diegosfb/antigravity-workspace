@@ -56,17 +56,16 @@ export default function App() {
     const compute = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      
+
       // Reserve space based on orientation/device
-      // On mobile, we might have miniatures at the bottom or top
-      // Let's assume 16px padding + 60px HUD + 120px for miniatures on mobile
-      const reserved = mobile ? (16 + 16 + 60 + 120) : (16 + 16 + 80 + 8);
+      // On mobile: 16px container padding + HUD + miniatures + buffer
+      const reserved = mobile ? 320 : (16 + 16 + 80 + 8);
       const availableHeight = window.innerHeight - reserved;
-      const availableWidth = window.innerWidth - (mobile ? 32 : (window.innerWidth * 0.4)); // Reserve space for sidebars on desktop
-      
+      const availableWidth = window.innerWidth - (mobile ? 32 : (window.innerWidth * 0.4));
+
       const sizeY = Math.floor(availableHeight / ROWS);
       const sizeX = Math.floor(availableWidth / COLS);
-      
+
       const size = Math.min(sizeY, sizeX);
       setBlockSize(Math.max(16, Math.min(size, 40)));
     };
@@ -83,12 +82,12 @@ export default function App() {
 
   const onLineClear = useCallback((lines: number) => {
     socket.emit('lines-cleared', { roomId, lines });
-    
+
     // Play sound for any line clear
     if (!isMuted) {
       // Always play explosion on line clear
       ww2AudioService.playExplosion();
-      
+
       // If sending garbage (2 or more lines), also play sending lines (AttackSend clips)
       // Added a small delay so they don't overlap perfectly and potentially get blocked
       if (lines >= 2) {
@@ -186,7 +185,7 @@ export default function App() {
     socket.on('opponent-update', ({ id, board: oppBoard, score: oppScore }) => {
       setGameState(prev => ({
         ...prev,
-        players: prev.players.map(p => 
+        players: prev.players.map(p =>
           p.id === id ? { ...p, board: oppBoard, score: oppScore } : p
         ),
       }));
@@ -247,7 +246,7 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState.status !== 'playing' || isGameOver) return;
-      
+
       if (e.key === 'ArrowLeft') move(-1);
       if (e.key === 'ArrowRight') move(1);
       if (e.key === 'ArrowDown') drop();
@@ -289,7 +288,7 @@ export default function App() {
     const isPlaying = gameState.status === 'playing' && !isGameOver;
     const isWaiting = gameState.status === 'waiting';
     const isSplash = !inRoom;
-    
+
     if (gameState.ww2Mode && gameState.backgroundMusicEnabled) {
       const stage = WW2_STAGES[gameState.currentStageIndex];
       // Splash music, Lobby music, or Stage music
@@ -297,7 +296,7 @@ export default function App() {
       if (isPlaying) targetUrl = stage.audioUrl;
       else if (isWaiting) targetUrl = AUDIO_CONFIG.music.lobby;
       else if (isSplash) targetUrl = AUDIO_CONFIG.music.splash;
-      
+
       if (targetUrl) {
         if (!audioRef.current) {
           audioRef.current = new Audio(targetUrl);
@@ -305,7 +304,7 @@ export default function App() {
         } else if (audioRef.current.src !== targetUrl) {
           audioRef.current.src = targetUrl;
         }
-        
+
         audioRef.current.muted = isMuted;
         if (!isMuted) {
           audioRef.current.play().then(() => {
@@ -326,7 +325,7 @@ export default function App() {
         audioRef.current.pause();
       }
     }
-    
+
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -350,7 +349,7 @@ export default function App() {
   if (!inRoom) {
     return (
       <div className="h-screen overflow-hidden bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md w-full bg-neutral-900 p-8 rounded-3xl border border-neutral-800 shadow-2xl"
@@ -491,7 +490,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.5.0-debug | 2026-03-27
+            v2.5.1-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -522,7 +521,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
-      
+
       {/* Mobile Sidebar Toggle Button */}
       {inRoom && isMobile && (
         <button
@@ -534,11 +533,11 @@ export default function App() {
       )}
 
       <div className={`flex-1 max-w-screen-2xl mx-auto ${isMobile ? 'flex flex-col' : 'grid grid-cols-1 lg:grid-cols-12'} gap-4 relative z-10 min-h-0 w-full`}>
-        
+
         {/* Left Sidebar - Player Info */}
         <AnimatePresence>
           {(isSidebarOpen || !isMobile) && (
-            <motion.div 
+            <motion.div
               initial={isMobile ? { x: -300, opacity: 0 } : false}
               animate={{ x: 0, opacity: 1 }}
               exit={isMobile ? { x: -300, opacity: 0 } : false}
@@ -551,7 +550,7 @@ export default function App() {
                     <h2 className="font-bold uppercase tracking-widest text-sm text-neutral-400">Players</h2>
                   </div>
                   {gameState.ww2Mode && (
-                    <button 
+                    <button
                       onClick={() => setIsMuted(!isMuted)}
                       className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
                     >
@@ -570,7 +569,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                
+
                 {gameState.status === 'waiting' && (
                   <button
                     onClick={setReady}
@@ -590,20 +589,20 @@ export default function App() {
                     <Zap className="w-5 h-5" />
                     <h2 className="font-bold uppercase tracking-widest text-sm">Room Settings</h2>
                   </div>
-                  
+
                   <div className="space-y-6">
                     {/* Attack Speed */}
                     <div>
                       <div className="flex justify-between mb-2">
                         <label className="text-[10px] text-neutral-500 uppercase font-bold">Attack Speed</label>
                         <span className="text-[10px] font-mono text-purple-400">
-                          +{Math.round((1/gameState.attackSpeedMultiplier - 1) * 100)}% Faster
+                          +{Math.round((1 / gameState.attackSpeedMultiplier - 1) * 100)}% Faster
                         </span>
                       </div>
-                      <input 
-                        type="range" 
-                        min="1.1" 
-                        max="10.0" 
+                      <input
+                        type="range"
+                        min="1.1"
+                        max="10.0"
                         step="0.1"
                         value={1 / gameState.attackSpeedMultiplier}
                         onChange={(e) => updateSettings({ attackSpeedMultiplier: 1 / parseFloat(e.target.value) })}
@@ -644,7 +643,7 @@ export default function App() {
               )}
 
               {gameState.ww2Mode && gameState.status === 'playing' && (
-                <div 
+                <div
                   className="bg-orange-900/40 backdrop-blur-md p-6 rounded-3xl border border-orange-500/50 mb-6"
                 >
                   <div className="flex items-center gap-2 text-orange-400 mb-2">
@@ -653,7 +652,7 @@ export default function App() {
                   </div>
                   <div className="text-2xl font-black italic text-white mb-1">{currentStage.name}</div>
                   <div className="text-xs text-orange-200/70 uppercase font-bold tracking-widest">{currentStage.country}</div>
-                  
+
                   <div className="mt-4 pt-4 border-t border-orange-500/20 flex justify-between items-center">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-orange-400 font-bold uppercase">Level</span>
@@ -661,7 +660,7 @@ export default function App() {
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-[10px] text-orange-400 font-bold uppercase">Speed</span>
-                      <span className="text-xl font-black">x{ (1 / gameState.baseSpeedMultiplier).toFixed(2) }</span>
+                      <span className="text-xl font-black">x{(1 / gameState.baseSpeedMultiplier).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -674,9 +673,9 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {isSidebarOpen && isMobile && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -691,7 +690,7 @@ export default function App() {
             <Board board={board} activePiece={activePiece} blockSize={blockSize} />
             <AnimatePresence>
               {gameState.status === 'waiting' && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -706,7 +705,7 @@ export default function App() {
               )}
 
               {isGameOver && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center rounded-lg z-20"
@@ -720,7 +719,7 @@ export default function App() {
               )}
 
               {winner && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="absolute inset-0 bg-orange-500/90 backdrop-blur-md flex items-center justify-center rounded-lg z-30"
@@ -736,7 +735,7 @@ export default function App() {
               )}
             </AnimatePresence>
           </div>
-          
+
           <div className="mt-8 grid grid-cols-2 gap-8 w-full max-w-[400px]">
             <div className="text-center">
               <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Score</div>
@@ -768,7 +767,7 @@ export default function App() {
                       <button
                         key={i}
                         onClick={() => sendSpecial(opp.id, type, i)}
-                        className={`bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all active:scale-95 ${isMobile ? 'w-6 h-6 rounded-md text-[6px] flext items-center justify-center' : 'text-[10px] py-1 px-3 rounded-full'}`}
+                        className={`bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all active:scale-95 ${isMobile ? 'w-6 h-6 rounded-md text-[6px] flex items-center justify-center' : 'text-[10px] py-1 px-3 rounded-full'}`}
                       >
                         {isMobile ? type : `SEND ${type}`}
                       </button>
@@ -795,7 +794,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.5.0-debug | 2026-03-27
+          v2.5.1-debug | 2026-03-27
         </div>
       </div>
     </div>
