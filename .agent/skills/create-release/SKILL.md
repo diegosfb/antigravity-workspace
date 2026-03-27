@@ -36,8 +36,9 @@ description: Orchestrates a full production release: runs tests, increments mino
 8.  **Deploy to GCP**: Invoke `@gcp-deploy`.
 9.  **Deploy to AWS**: Invoke `@aws-deploy`.
 10. **Deploy to Render**:
-    - Ensure code is pushed (Step 7). Render auto-deploys on push.
-    - Confirm the deployment status on the Render dashboard.
+    - Ensure code is pushed (Step 7). Render auto-deploys on push to the linked branch.
+    - Confirm the deployment status on the Render dashboard for `battletris-server`.
+    - Production URL: `https://battletris-server.onrender.com/`
 
 ## Operational Guardrails
 - **Atomic Release**: All steps must be successfully completed for a "successful" release.

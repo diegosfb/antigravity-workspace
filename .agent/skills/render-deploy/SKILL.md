@@ -11,7 +11,10 @@ description: Automates the setup and deployment process for Render.com using Blu
 - To set up a new environment (Staging/Prod) using Render Blueprints.
 
 ## How to use it
-1.  **Repository Sync**: Ensure all local changes are pushed to the GitHub repository connected to Render.
+- **Render**:
+    - Ensure code is pushed. Render auto-deploys on push to the linked branch.
+    - Confirm the deployment status on the Render dashboard for `battletris-server`.
+    - Production URL: `https://battletris-server.onrender.com/`
 2.  **Blueprint Verification**: 
     - Check for the existence of `render.yaml` in the root folder.
     - Validate that the `services` and `envVars` in the YAML match the project needs.
