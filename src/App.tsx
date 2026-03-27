@@ -12,11 +12,13 @@ import { AUDIO_CONFIG } from './audioConfig';
 
 export default function App() {
   const socket = useMemo(() => {
-    // In some environments, we need to be explicit about the path
+    // App Runner (Envoy proxy) doesn't support WebSocket upgrades.
+    // Start with polling, which always works, and upgrade to WebSocket only if available.
     return io({
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      timeout: 10000,
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      timeout: 20000,
     });
   }, []);
 
@@ -475,7 +477,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.4.0-debug | 2026-03-27
+            v2.4.1-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -899,7 +901,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.4.0-debug | 2026-03-27
+          v2.4.1-debug | 2026-03-27
         </div>
       </div>
     </div>
