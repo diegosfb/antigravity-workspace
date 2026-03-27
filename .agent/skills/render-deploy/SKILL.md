@@ -28,3 +28,5 @@ description: Automates the setup and deployment process for Render.com using Blu
 ## Operational Guardrails
 - **Sync First**: Always remind the user to run `git push` before triggering the Blueprint, as Render pulls directly from the remote branch.
 - **YAML Validation**: If `render.yaml` is missing, offer to generate a standard one for a Node.js/Web Service before directing the user to the dashboard.
+- **Port Matching**: Render injects a `PORT` environment variable at runtime. Ensure `server.ts` reads `process.env.PORT` (it already does). Do NOT hardcode a port in `render.yaml`.
+- **Architecture**: No local build step needed — Render builds from source on its own `linux/amd64` infrastructure, so the ARM64 issue does not apply here.
