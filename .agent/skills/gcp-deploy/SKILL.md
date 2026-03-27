@@ -27,3 +27,5 @@ description: Automates the deployment of the 'battletris-server' to Google Cloud
 ## Operational Guardrails
 - **Pre-check**: Verify the existence of a `Dockerfile` or valid buildpack source before initiating `gcloud run deploy`.
 - **Environment**: Ensure the agent is running in a shell environment where the `gcloud` SDK is installed and accessible.
+- **Port Matching**: Cloud Run injects a `PORT` environment variable (default `8080`). Ensure `server.ts` reads `process.env.PORT` — it already does.
+- **Platform Architecture**: If building a local Docker image to push to Artifact Registry (instead of `--source .`), always use `--platform linux/amd64`. With `--source .`, Cloud Build handles this automatically.
