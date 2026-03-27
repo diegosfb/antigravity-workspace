@@ -1,5 +1,5 @@
 // App.tsx - Version: 1.1.0 (Cache breaker)
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'motion/react';
@@ -31,6 +31,7 @@ export default function App() {
     players: [],
     status: 'waiting',
     attackSpeedMultiplier: 0.33,
+    ownerId: '',
     ww2Mode: true,
     levelIntervalMinutes: 5,
     speedIncreasePercent: 25,
@@ -41,6 +42,13 @@ export default function App() {
     debugMode: true,
     backgroundMusicEnabled: true,
   });
+
+  // Touch controls state (must be at top to avoid Hook order violation)
+  const touchXRef = useRef<number>(0);
+  const touchYRef = useRef<number>(0);
+  const accumXRef = useRef<number>(0);
+  const lastTapRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -490,7 +498,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.6.0-debug | 2026-03-27
+            v2.7.0-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -499,6 +507,55 @@ export default function App() {
 
   const me = gameState.players.find(p => p.id === socket.id);
   const opponents = gameState.players.filter(p => p.id !== socket.id);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (gameState.status !== 'playing' || isGameOver) return;
+    const touch = e.touches[0];
+    touchXRef.current = touch.clientX;
+    touchYRef.current = touch.clientY;
+    accumXRef.current = 0;
+    isDraggingRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (gameState.status !== 'playing' || isGameOver) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchXRef.current;
+    const deltaY = touch.clientY - touchYRef.current;
+    
+    // Horizontal movement
+    accumXRef.current += deltaX;
+    if (Math.abs(accumXRef.current) >= blockSize) {
+      const dir = accumXRef.current > 0 ? 1 : -1;
+      move(dir);
+      accumXRef.current = 0;
+      isDraggingRef.current = true;
+    }
+
+    // Soft drop (vertical drag)
+    if (deltaY > blockSize) {
+      drop();
+      touchYRef.current = touch.clientY;
+      isDraggingRef.current = true;
+    }
+
+    touchXRef.current = touch.clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (gameState.status !== 'playing' || isGameOver) return;
+    
+    if (!isDraggingRef.current) {
+      const now = Date.now();
+      if (now - lastTapRef.current < 300) {
+        hardDrop();
+        lastTapRef.current = 0;
+      } else {
+        playerRotate();
+        lastTapRef.current = now;
+      }
+    }
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-neutral-950 text-white p-2 lg:p-4 font-sans relative flex flex-col">
@@ -686,7 +743,12 @@ export default function App() {
 
         {/* Main Game Area */}
         <div className={`${isMobile ? 'flex-1' : 'lg:col-span-6'} flex flex-col items-center justify-center min-h-0 py-2`}>
-          <div className="relative">
+          <div 
+            className="relative touch-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <Board board={board} activePiece={activePiece} blockSize={blockSize} />
             <AnimatePresence>
               {gameState.status === 'waiting' && (
@@ -794,7 +856,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.6.0-debug | 2026-03-27
+          v2.7.0-debug | 2026-03-27
         </div>
       </div>
     </div>
