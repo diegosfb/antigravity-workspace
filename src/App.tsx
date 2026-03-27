@@ -47,7 +47,6 @@ export default function App() {
   const touchXRef = useRef<number>(0);
   const touchYRef = useRef<number>(0);
   const accumXRef = useRef<number>(0);
-  const lastTapRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
@@ -66,8 +65,8 @@ export default function App() {
       setIsMobile(mobile);
 
       // Reserve space based on orientation/device
-      // On mobile: 16px container padding + HUD + miniatures + buffer
-      const reserved = mobile ? 320 : (16 + 16 + 80 + 8);
+      // On mobile: Container padding (16) + Sidebar Toggle (60) + HUD (120) + Opponents (140) + Buffer (20)
+      const reserved = mobile ? 356 : (16 + 16 + 80 + 8);
       const availableHeight = window.innerHeight - reserved;
       const availableWidth = window.innerWidth - (mobile ? 32 : (window.innerWidth * 0.4));
 
@@ -498,7 +497,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.7.0-debug | 2026-03-27
+            v2.7.2-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -510,6 +509,7 @@ export default function App() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (gameState.status !== 'playing' || isGameOver) return;
+    if (e.cancelable) e.preventDefault();
     const touch = e.touches[0];
     touchXRef.current = touch.clientX;
     touchYRef.current = touch.clientY;
@@ -519,6 +519,7 @@ export default function App() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (gameState.status !== 'playing' || isGameOver) return;
+    if (e.cancelable) e.preventDefault();
     const touch = e.touches[0];
     const deltaX = touch.clientX - touchXRef.current;
     const deltaY = touch.clientY - touchYRef.current;
@@ -542,23 +543,17 @@ export default function App() {
     touchXRef.current = touch.clientX;
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     if (gameState.status !== 'playing' || isGameOver) return;
+    if (e.cancelable) e.preventDefault();
     
     if (!isDraggingRef.current) {
-      const now = Date.now();
-      if (now - lastTapRef.current < 300) {
-        hardDrop();
-        lastTapRef.current = 0;
-      } else {
-        playerRotate();
-        lastTapRef.current = now;
-      }
+      playerRotate();
     }
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-neutral-950 text-white p-2 lg:p-4 font-sans relative flex flex-col">
+    <div className="h-[100dvh] overflow-hidden bg-neutral-950 text-white p-2 lg:p-4 font-sans relative flex flex-col">
       {/* WW2 Background */}
       <AnimatePresence mode="wait">
         {gameState.ww2Mode && (
@@ -742,7 +737,7 @@ export default function App() {
         )}
 
         {/* Main Game Area */}
-        <div className={`${isMobile ? 'flex-1' : 'lg:col-span-6'} flex flex-col items-center justify-center min-h-0 py-2`}>
+        <div className={`${isMobile ? 'flex-1' : 'lg:col-span-6'} flex flex-col items-center justify-center min-h-0 py-1`}>
           <div 
             className="relative touch-none"
             onTouchStart={handleTouchStart}
@@ -798,7 +793,7 @@ export default function App() {
             </AnimatePresence>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-8 w-full max-w-[400px]">
+          <div className={`${isMobile ? 'mt-4' : 'mt-8'} grid grid-cols-2 gap-4 lg:gap-8 w-full max-w-[400px]`}>
             <div className="text-center">
               <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Score</div>
               <div className="text-3xl font-black italic">{score}</div>
@@ -856,7 +851,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.7.0-debug | 2026-03-27
+          v2.7.2-debug | 2026-03-27
         </div>
       </div>
     </div>
