@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.1.0",
+  "version": "2.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite-node server.ts",
@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "start": "npx tsx server.ts"
+    "start": "npx tsx server.ts",
+    "bump": "tsx scripts/bump-version.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
