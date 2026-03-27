@@ -6,13 +6,19 @@ const packageJsonPath = path.join(projectRoot, 'package.json');
 const appTsxPath = path.join(projectRoot, 'src', 'App.tsx');
 
 function bumpVersion() {
+  const type = process.argv[2] === 'minor' ? 'minor' : 'patch';
+  
   // 1. Update package.json
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
   const oldVersion = packageJson.version;
   const versionParts = oldVersion.split('.').map(Number);
   
-  // Increment patch version
-  versionParts[2] += 1;
+  if (type === 'minor') {
+    versionParts[1] += 1;
+    versionParts[2] = 0; // Reset patch on minor bump
+  } else {
+    versionParts[2] += 1;
+  }
   const newVersion = versionParts.join('.');
   packageJson.version = newVersion;
   
