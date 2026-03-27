@@ -490,7 +490,7 @@ export default function App() {
         {/* Debug Version Info */}
         <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
           <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-            v2.5.1-debug | 2026-03-27
+            v2.6.0-debug | 2026-03-27
           </div>
         </div>
       </div>
@@ -794,7 +794,7 @@ export default function App() {
       {/* Debug Version Info */}
       <div className="fixed bottom-2 right-2 z-50 pointer-events-none opacity-40 transition-opacity">
         <div className="text-xs font-mono text-white text-right uppercase tracking-tighter">
-          v2.5.1-debug | 2026-03-27
+          v2.6.0-debug | 2026-03-27
         </div>
       </div>
     </div>
