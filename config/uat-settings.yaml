@@ -1,4 +1,3 @@
 Environment: UAT
 Purpose: User Acceptance Testing
-Infrastructure: config/Infrastructure/aws.yaml
-# Note: AWS App Runner target for UAT.
+Infrastructure: config/Infrastructure/gcp.yaml

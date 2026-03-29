@@ -45,6 +45,7 @@ try {
         `# Generated from config/${targetLower}-settings.yaml on ${new Date().toISOString()}`,
         `# ==============================================================================`,
         `NODE_ENV=${targetLower}`,
+        `INFRASTRUCTURE=${infraRef}`,
         ``
     ];
 
@@ -57,7 +58,6 @@ try {
 
     const frontendUrl = infraFrontend || infraDeployment;
     const apiUrl = infraApi || infraDeployment;
-    const targetArch = infra['Target Architecture'];
 
     if (!frontendUrl || !apiUrl) {
         console.error('Error: Infrastructure file must define Deployment URL or Frontend/API URL.');
@@ -68,10 +68,6 @@ try {
     envLines.push(`VITE_API_URL=${apiUrl}`);
     // Maintain backwards compatibility with the current project's Server URL name
     envLines.push(`SOCKET_SERVER_URL=${apiUrl}`);
-
-    if (targetArch) {
-        envLines.push(`TARGET_ARCHITECTURE=${targetArch}`);
-    }
 
     // 2. Database
     if (config['Database']) {
