@@ -3,3 +3,4 @@ Service Type: app-runner
 Service Name: battletris-server
 Region: us-east-2
 Target Architecture: linux/amd64
+Deployment URL: https://ts3i9njskc.us-east-2.awsapprunner.com

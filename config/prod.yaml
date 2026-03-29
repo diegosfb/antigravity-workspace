@@ -1,6 +1,7 @@
 Environment: PROD
 Purpose: Production user-facing environment
 Target Architecture: linux/amd64
+Infrastructure: config/Infrastructure/aws.yaml
 Frontend URL: https://ts3i9njskc.us-east-2.awsapprunner.com
 API URL: https://ts3i9njskc.us-east-2.awsapprunner.com # Production AWS Endpoint
 # Note: Primary Production service hosted on AWS App Runner (Ohio).

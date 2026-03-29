@@ -4,3 +4,4 @@ Service Type: cloud-run
 Account: diegosfb@gmail.com
 Service Name: battletris-server
 Target Architecture: linux/amd64
+Deployment URL: https://battletris-server-435080045459.us-central1.run.app

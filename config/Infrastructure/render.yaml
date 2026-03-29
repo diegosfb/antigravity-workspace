@@ -3,6 +3,8 @@ services:
     name: battletris-server
     env: node
     plan: free
+    # Account: Github (digosfbf@gmail.com)
+    # Deployment URL: https://battletris-server.onrender.com
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:

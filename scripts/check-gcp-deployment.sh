@@ -3,13 +3,36 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONFIG_FILE="$PROJECT_ROOT/config/gcp-infra-settings"
+ACTIVE_ENV_FILE="$PROJECT_ROOT/.agent/.active_env"
+ENV_CONFIG_FILE=""
+CONFIG_FILE="$PROJECT_ROOT/config/Infrastructure/gcp.yaml"
 
 read_setting() {
   local file="$1"
   local key="$2"
   awk -F': ' -v k="$key" 'tolower($1)==tolower(k){$1=""; sub(/^: /,""); print; exit}' "$file"
 }
+
+resolve_infra_file() {
+  if [[ -f "$ACTIVE_ENV_FILE" ]]; then
+    local env
+    env="$(tr '[:upper:]' '[:lower:]' < "$ACTIVE_ENV_FILE" | tr -d '\n')"
+    ENV_CONFIG_FILE="$PROJECT_ROOT/config/${env}.yaml"
+    if [[ -f "$ENV_CONFIG_FILE" ]]; then
+      local infra
+      infra="$(read_setting "$ENV_CONFIG_FILE" "Infrastructure")"
+      if [[ -n "$infra" ]]; then
+        if [[ "$infra" = /* ]]; then
+          CONFIG_FILE="$infra"
+        else
+          CONFIG_FILE="$PROJECT_ROOT/$infra"
+        fi
+      fi
+    fi
+  fi
+}
+
+resolve_infra_file
 
 SERVICE_DEFAULT=""
 REGION_DEFAULT=""
