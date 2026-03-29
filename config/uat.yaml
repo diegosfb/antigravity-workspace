@@ -1,7 +1,0 @@
-Environment: UAT
-Purpose: User Acceptance Testing
-Target Architecture: linux/amd64
-Infrastructure: config/Infrastructure/aws.yaml
-Frontend URL: https://battletris-uat.us-east-1.awsapprunner.com
-API URL: https://battletris-uat.us-east-1.awsapprunner.com # AWS App Runner Endpoint
-# Note: AWS App Runner target for UAT.

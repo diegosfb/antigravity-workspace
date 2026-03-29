@@ -58,7 +58,7 @@ The application operates as a full-stack monolithic TypeScript application that 
 - **Static Delivery:** In production (`NODE_ENV=production`), Express statically serves the compiled Vite `dist/` directory.
 
 ### 3. Deployment / Cloud
-- **Primary Host:** AWS App Runner (PROD host defined in `config/prod.yaml`).
+- **Primary Host:** AWS App Runner (PROD host defined in `config/prod-settings.yaml`).
 - **Environment:** Node.js service running `npm start` with `NODE_ENV=production`.
 - **Port:** Dynamically injected via `process.env.PORT` by the App Runner runtime.
 

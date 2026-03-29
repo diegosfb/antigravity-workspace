@@ -4,3 +4,4 @@ Region: us-east-2
 Target Architecture: linux/amd64
 Application Image: battletris-server
 Tag: latest
+Deployment URL: https://ts3i9njskc.us-east-2.awsapprunner.com

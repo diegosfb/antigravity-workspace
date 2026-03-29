@@ -20,14 +20,14 @@ fi
 
 # 1. Verify YAML configuration exists
 TARGET_LOWER=$(echo "$TARGET" | tr '[:upper:]' '[:lower:]')
-YAML_FILE="$PROJECT_ROOT/config/$TARGET_LOWER.yaml"
+YAML_FILE="$PROJECT_ROOT/config/${TARGET_LOWER}-settings.yaml"
 if [ ! -f "$YAML_FILE" ]; then
     echo "Error: Configuration file $YAML_FILE not found."
     exit 1
 fi
 
 # 2. Generate .env file from YAML
-echo "Generating .env file from config/$TARGET_LOWER.yaml..."
+echo "Generating .env file from config/${TARGET_LOWER}-settings.yaml..."
 npx tsx scripts/generate-env.ts "$TARGET"
 
 if [ $? -ne 0 ]; then

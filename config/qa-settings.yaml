@@ -1,0 +1,4 @@
+Environment: QA
+Purpose: integration and regression testing
+Infrastructure: config/Infrastructure/gcp.yaml
+# Note: GCP Cloud Run target for QA validation.

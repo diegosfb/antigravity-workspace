@@ -7,3 +7,4 @@ Target Architecture: linux/amd64
 Repository: https://github.com/diegosfb/BetterTris-v2
 Application Image: battletris-server
 Tag: latest
+Deployment URL: https://battletris-server-dev.onrender.com

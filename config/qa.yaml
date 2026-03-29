@@ -1,7 +1,0 @@
-Environment: QA
-Purpose: integration and regression testing
-Target Architecture: linux/amd64
-Infrastructure: config/Infrastructure/gcp.yaml
-Frontend URL: https://battletris-server-435080045459.us-central1.run.app
-API URL: https://battletris-server-435080045459.us-central1.run.app # GCP Cloud Run Endpoint
-# Note: GCP Cloud Run target for QA validation.
