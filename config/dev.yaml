@@ -1,5 +1,6 @@
 Environment: DEV
 Purpose: Local development and iterations
+Target Architecture: local/host
 Frontend URL: http://localhost:8080
 API URL: http://localhost:8080 # Endpoint for Socket.io and Health checks
 # Note: This environment uses purely in-memory state (no DB/Cache required)

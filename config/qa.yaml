@@ -1,5 +1,6 @@
 Environment: QA
 Purpose: integration and regression testing
+Target Architecture: linux/amd64
 Frontend URL: https://battletris-qa.us-east-1.awsapprunner.com
 API URL: https://battletris-qa.us-east-1.awsapprunner.com # AWS App Runner Endpoint
 # Note: AWS App Runner target for QA validation.

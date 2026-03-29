@@ -12,7 +12,7 @@ flowchart TD
     Client1["Player 1 HTML5 Canvas/React State"]
     Client2["Player 2 HTML5 Canvas/React State"]
     
-    Proxy["Reverse Proxy / Load Balancer (Render)"]
+    Proxy["Reverse Proxy / Load Balancer (AWS App Runner)"]
     
     NodeServer["Node.js + Express Backend"]
     SocketIO["Socket.io WebSocket Server"]
@@ -58,9 +58,9 @@ The application operates as a full-stack monolithic TypeScript application that 
 - **Static Delivery:** In production (`NODE_ENV=production`), Express statically serves the compiled Vite `dist/` directory.
 
 ### 3. Deployment / Cloud
-- **Primary Host:** Render.com (Defined via `render.yaml` Blueprint).
-- **Environment:** Node environment (Web Service) running `npm start` natively.
-- **Port:** Dynamically injected via `process.env.PORT` (defaults to 10000 on Render).
+- **Primary Host:** AWS App Runner (PROD host defined in `config/prod.yaml`).
+- **Environment:** Node.js service running `npm start` with `NODE_ENV=production`.
+- **Port:** Dynamically injected via `process.env.PORT` by the App Runner runtime.
 
 ---
 
@@ -71,6 +71,7 @@ Release orchestration is managed via the global Antigravity **Git Orchestrator**
 1. **Versioning:** Major, Minor, or Patch bumps are performed via `./scripts/bump-version.sh`.
 2. **Multi-Platform Release:** An **Atomic Deployment** strategy is used to synchronize releases across multiple clouds.
 3. **Trigger:** Deployments are triggered via specialized slash commands (`/deploy-full`, `/deploy-gcp`, etc.) which handle linting, building, tagging, and cloud rollout sequentially.
+4. **App Runner Deploy:** Use `./scripts/deploy-apprunner.sh` to enforce `linux/amd64` builds and avoid arm64-only images.
 
 ---
 

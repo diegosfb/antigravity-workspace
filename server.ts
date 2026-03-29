@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import os from "os";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,11 @@ async function startServer() {
   });
 
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
+  console.log("[arch]", {
+    process: process.arch,
+    os: os.arch(),
+    platform: os.platform(),
+  });
 
   const rooms = new Map<string, RoomState>();
 

@@ -14,7 +14,6 @@ COPY . .
 # Build the Vite React frontend
 RUN npm run build
 
-# Cloud Run sets the PORT environment variable (default 8080)
 EXPOSE 8080
 
 # Start the backend server using the npm start script
