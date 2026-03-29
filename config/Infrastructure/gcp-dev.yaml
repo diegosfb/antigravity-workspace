@@ -1,7 +1,7 @@
 Account: diegosfb@gmail.com
 GCP ProjectID: bettertris
 Region: us-central1
-WebService: battletris-server
+WebService: battletris-server-dev
 Target Architecture: linux/amd64
 Repository: https://github.com/diegosfb/BetterTris-v2
 Application Image: battletris-server
