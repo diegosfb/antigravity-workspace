@@ -440,6 +440,11 @@ async function startServer() {
     });
   }
 
+  // Health check endpoint for App Runner/Cloud Run
+  app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+  });
+
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });

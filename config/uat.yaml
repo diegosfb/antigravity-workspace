@@ -1,0 +1,5 @@
+Environment: UAT
+Purpose: User Acceptance Testing
+Frontend URL: https://battletris-uat.us-east-1.awsapprunner.com
+API URL: https://battletris-uat.us-east-1.awsapprunner.com # AWS App Runner Endpoint
+# Note: AWS App Runner target for UAT.

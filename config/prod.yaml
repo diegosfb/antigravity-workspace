@@ -1,0 +1,5 @@
+Environment: PROD
+Purpose: Production user-facing environment
+Frontend URL: https://ts3i9njskc.us-east-2.awsapprunner.com
+API URL: https://ts3i9njskc.us-east-2.awsapprunner.com # Production AWS Endpoint
+# Note: Primary Production service hosted on AWS App Runner (Ohio).

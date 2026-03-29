@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "2.7.5",
+  "version": "2.7.9",
   "type": "module",
   "scripts": {
     "dev": "vite-node server.ts",
@@ -10,8 +10,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "start": "npx tsx server.ts",
-    "bump": "tsx scripts/bump-version.ts",
-    "bump:minor": "tsx scripts/bump-version.ts minor"
+    "bump": "./scripts/bump-version.sh",
+    "bump:minor": "./scripts/bump-version.sh minor"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -19,6 +19,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "js-yaml": "^4.1.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",
