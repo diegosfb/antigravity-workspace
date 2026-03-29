@@ -2,14 +2,52 @@
 
 set -euo pipefail
 
-SERVICE_ARN_DEFAULT="arn:aws:apprunner:us-east-2:434045117808:service/battletris-server/1d985988d9d4450d9a1eb73ebc2c8aae"
-REGION_DEFAULT="us-east-2"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_FILE="$PROJECT_ROOT/config/aws-infra-settings"
+
+read_setting() {
+  local file="$1"
+  local key="$2"
+  awk -F': ' -v k="$key" 'tolower($1)==tolower(k){$1=""; sub(/^: /,""); print; exit}' "$file"
+}
+
+SERVICE_ARN_DEFAULT=""
+REGION_DEFAULT=""
+SERVICE_NAME_DEFAULT=""
+ACCOUNT_DEFAULT=""
+SERVICE_TYPE_DEFAULT=""
+TARGET_ARCH_DEFAULT=""
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  REGION_DEFAULT="$(read_setting "$CONFIG_FILE" "Region")"
+  SERVICE_NAME_DEFAULT="$(read_setting "$CONFIG_FILE" "Service Name")"
+  ACCOUNT_DEFAULT="$(read_setting "$CONFIG_FILE" "Account")"
+  SERVICE_TYPE_DEFAULT="$(read_setting "$CONFIG_FILE" "Service Type")"
+  TARGET_ARCH_DEFAULT="$(read_setting "$CONFIG_FILE" "Target Architecture")"
+fi
 
 SERVICE_ARN="${1:-$SERVICE_ARN_DEFAULT}"
 REGION="${2:-$REGION_DEFAULT}"
 
-if [[ -z "$SERVICE_ARN" ]]; then
+if [[ -z "$SERVICE_ARN" && -z "$SERVICE_NAME_DEFAULT" ]]; then
   echo "Usage: $0 [service-arn] [region]"
+  exit 1
+fi
+
+if [[ -z "$REGION" ]]; then
+  echo "Error: Missing region. Provide an argument or configure $CONFIG_FILE."
+  exit 1
+fi
+
+if [[ -z "$SERVICE_ARN" && -n "$SERVICE_NAME_DEFAULT" ]]; then
+  SERVICE_ARN=$(aws apprunner list-services \
+    --region "$REGION" \
+    --query "ServiceSummaryList[?ServiceName=='${SERVICE_NAME_DEFAULT}'].ServiceArn | [0]" \
+    --output text)
+fi
+
+if [[ -z "$SERVICE_ARN" || "$SERVICE_ARN" == "None" ]]; then
+  echo "Error: Unable to resolve App Runner service ARN. Provide it as an argument or check $CONFIG_FILE."
   exit 1
 fi
 
@@ -78,6 +116,17 @@ fetch_latest_operation() {
     --output text)
 }
 
+print_context() {
+  if [[ -n "$SERVICE_TYPE_DEFAULT" ]]; then
+    echo "Service type: $SERVICE_TYPE_DEFAULT"
+  fi
+  if [[ -n "$ACCOUNT_DEFAULT" ]]; then
+    echo "Account: $ACCOUNT_DEFAULT"
+  fi
+  if [[ -n "$TARGET_ARCH_DEFAULT" ]]; then
+    echo "Target architecture: $TARGET_ARCH_DEFAULT"
+  fi
+}
 is_failed_or_rolled_back() {
   if [[ "$latest_status" == "FAILED" || "$latest_status" == *"ROLLBACK"* ]]; then
     return 0
@@ -144,6 +193,7 @@ poll_until_running() {
   echo "Latest operation status: $latest_status"
   echo "Started at: $latest_started"
   echo "Service URL: https://$service_url"
+  print_context
 
   while true; do
     aws apprunner list-operations \
@@ -159,6 +209,7 @@ poll_until_running() {
       echo "Service status: $service_status"
       echo "Latest operation: $latest_type ($latest_id)"
       echo "Latest operation status: $latest_status"
+      print_context
       fetch_logs
       exit 1
     fi
@@ -169,6 +220,7 @@ poll_until_running() {
       echo "Latest operation status: $latest_status"
       echo "Service updated at: $updated_at"
       echo "Service URL: https://$service_url"
+      print_context
       exit 0
     fi
 
@@ -189,6 +241,7 @@ if [[ "$service_status" == "RUNNING" ]]; then
   echo "Latest operation status: $latest_status"
   echo "Service updated at: $updated_at"
   echo "Service URL: https://$service_url"
+  print_context
   exit 0
 fi
 
@@ -197,6 +250,7 @@ if is_failed_or_rolled_back; then
   echo "Service status: $service_status"
   echo "Latest operation: $latest_type ($latest_id)"
   echo "Latest operation status: $latest_status"
+  print_context
   fetch_logs
   exit 1
 fi
@@ -205,4 +259,5 @@ echo "Service status: $service_status"
 echo "Latest operation: $latest_type ($latest_id)"
 echo "Latest operation status: $latest_status"
 echo "Service URL: https://$service_url"
+print_context
 exit 1

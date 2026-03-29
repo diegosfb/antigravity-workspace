@@ -1,0 +1,6 @@
+Project ID: bettertris
+Region: us-central1
+Service Type: cloud-run
+Account: diegosfb@gmail.com
+Service Name: battletris-server
+Target Architecture: linux/amd64

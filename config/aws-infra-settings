@@ -1,0 +1,5 @@
+Account: diegosfb@gmail.com
+Service Type: app-runner
+Service Name: battletris-server
+Region: us-east-2
+Target Architecture: linux/amd64
