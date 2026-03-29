@@ -9,7 +9,7 @@ terraform {
 }
 
 locals {
-  infra = yamldecode(file(abspath("${path.module}/../../aws.yaml")))
+  infra = yamldecode(file(abspath("${path.module}/../../aws-dev.yaml")))
   service_name = var.service_name != "" ? var.service_name : local.infra["WebService"]
   ecr_name     = var.ecr_repository_name != "" ? var.ecr_repository_name : local.infra["WebService"]
   app_image    = try(local.infra["Application Image"], local.ecr_name)

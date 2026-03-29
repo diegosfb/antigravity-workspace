@@ -1,7 +1,2 @@
-Service Type: local
-Account: local
-Project ID: local
-Region: local
-Service Name: local
 Target Architecture: local/host
 Deployment URL: http://localhost:8080

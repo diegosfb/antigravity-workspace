@@ -1,7 +1,8 @@
-Project ID: bettertris
-Region: us-central1
-Service Type: cloud-run
 Account: diegosfb@gmail.com
-Service Name: battletris-server
+GCP ProjectID: bettertris
+Region: us-central1
+WebService: battletris-server-dev
 Target Architecture: linux/amd64
-Deployment URL: https://battletris-server-435080045459.us-central1.run.app
+Repository: https://github.com/diegosfb/BetterTris-v2
+Application Image: battletris-server
+Tag: latest

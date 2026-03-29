@@ -80,11 +80,11 @@ Release orchestration is managed via the global Antigravity **Git Orchestrator**
 > [!IMPORTANT]
 > **Active Environment:** **PROD** (AWS App Runner)
 
-| **Production** | **Active** | AWS | `https://ts3i9njskc.us-east-2.awsapprunner.com` | Primary user-facing environment. |
-| **QA / Staging** | Standby | AWS | `https://battletris-qa.us-east-1.awsapprunner.com` | Secondary target for verification. |
-| **UAT** | Standby | AWS | `https://battletris-uat.us-east-1.awsapprunner.com` | User acceptance testing. |
-| **Development** | Standby | Local | `http://localhost:8080` | Local iterations. |
-| **Containers** | Ready | ECR | `battletris-v2` | Docker registry for AWS App Runner. |
+| **Production** | AWS | `https://ts3i9njskc.us-east-2.awsapprunner.com` | Primary user-facing environment. |
+| **QA / Staging** | AWS | `https://battletris-qa.us-east-1.awsapprunner.com` | Secondary target for verification. |
+| **UAT** | AWS | `https://battletris-uat.us-east-1.awsapprunner.com` | User acceptance testing. |
+| **Development** | Local | `http://localhost:8080` | Local iterations. |
+| **Containers** | ECR | `battletris-v2` | Docker registry for AWS App Runner. |
 
 ---
 

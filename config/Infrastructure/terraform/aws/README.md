@@ -12,7 +12,7 @@ It reads region and target architecture from `config/Infrastructure/aws.yaml`.
 ```bash
 cd config/Infrastructure/terraform/aws
 terraform init
-terraform apply -var="image_identifier=<account>.dkr.ecr.<region>.amazonaws.com/battletris-server:tag"
+terraform apply -var="image_identifier=<account>.dkr.ecr.<region>.amazonaws.com/<service-name-from-config/Infrastructure/aws.yaml>:tag"
 ```
 
 Notes:

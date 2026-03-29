@@ -1,7 +1,7 @@
 Render Account: diegosfbf@gmail.com
 Render OwnerID: tea-d72diikhg0os738icmtg
 Render AuthAccount: github
-WebService: battletris-server
+WebService: battletris-server-dev
 Region: oregon
 Target Architecture: linux/amd64
 Repository: https://github.com/diegosfb/BetterTris-v2

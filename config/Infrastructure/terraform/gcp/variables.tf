@@ -1,18 +1,19 @@
 variable "service_name" {
   type        = string
   description = "Cloud Run service name"
-  default     = "battletris-server"
+  default     = ""
 }
 
 variable "repository_id" {
   type        = string
   description = "Artifact Registry repository id"
-  default     = "cloud-run-source-deploy"
+  default     = ""
 }
 
 variable "image_uri" {
   type        = string
   description = "Container image URI for Cloud Run"
+  default     = ""
 }
 
 variable "container_port" {
