@@ -19,6 +19,26 @@ The `ci.yml` workflow runs four jobs:
 4. **Dependency Review** (PRs only)
    - Uses GitHub’s dependency review action to detect risky dependency changes.
 
+## Build Artifacts Workflow
+
+`build-artifacts.yml` runs on git tags (`v*`) and builds a single Docker image, then pushes it to:
+- AWS ECR
+- GCP Artifact Registry
+
+Required GitHub secrets:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `GCP_SERVICE_ACCOUNT_JSON`
+
+## Deploy Workflow Secrets
+
+The deploy workflow uses the same credentials as build artifacts:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `GCP_SERVICE_ACCOUNT_JSON`
+
+The deploy workflow accepts a `version_tag` input. If omitted, it deploys the latest git tag.
+
 ## How to use it
 - **Automatic**: The workflow runs on every push to `main` and every pull request targeting `main`.
 - **Manual trigger**: You can also re-run a workflow from the GitHub Actions UI:

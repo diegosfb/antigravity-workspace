@@ -12,6 +12,9 @@ on:
           - uat
           - prod
         required: true
+      version_tag:
+        description: "Image tag to deploy (e.g., v2.7.15). Leave empty to use latest git tag."
+        required: false
 
 concurrency:
   group: deploy-${{ inputs.environment }}
@@ -77,6 +80,34 @@ jobs:
           echo "app_image=$app_image" >> "$GITHUB_OUTPUT"
           echo "project_id=$project_id" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve image tag
+        id: tag
+        run: |
+          set -euo pipefail
+          tag_input="${{ inputs.version_tag }}"
+          if [ -z "$tag_input" ]; then
+          tag_input=$(git describe --tags --abbrev=0)
+          fi
+          echo "tag=$tag_input" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        if: steps.infra.outputs.platform == 'AWS' && steps.infra.outputs.cloud == 'AppRunner'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ steps.infra.outputs.region }}
+
+      - name: Authenticate to Google Cloud
+        if: steps.infra.outputs.platform == 'GCP' && steps.infra.outputs.cloud == 'CloudRun'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+
+      - name: Setup gcloud
+        if: steps.infra.outputs.platform == 'GCP' && steps.infra.outputs.cloud == 'CloudRun'
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Deploy (AWS App Runner)
         if: steps.infra.outputs.platform == 'AWS' && steps.infra.outputs.cloud == 'AppRunner'
         env:
@@ -84,6 +115,7 @@ jobs:
           SERVICE_NAME: ${{ steps.infra.outputs.service }}
           ACCOUNT_ID: ${{ steps.infra.outputs.account }}
           APP_IMAGE: ${{ steps.infra.outputs.app_image }}
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
           repo_name="$APP_IMAGE"
@@ -135,6 +167,7 @@ jobs:
           GCP_PROJECT: ${{ steps.infra.outputs.project_id }}
           GCP_REGION: ${{ steps.infra.outputs.region }}
           SERVICE_NAME: ${{ steps.infra.outputs.service }}
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
           prev_rev=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT" --format='value(status.traffic[0].revisionName)' 2>/dev/null || true)

@@ -1,46 +1,68 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# BattleTris
 
-# Run and deploy your AI Studio app
+BattleTris is a real-time, multiplayer Tetris experience. The app ships as a single Node.js service that serves the React/Vite frontend and hosts the Socket.io multiplayer backend.
 
-This contains everything you need to run your app locally.
+## Application Overview
 
-View your app in AI Studio: https://ai.studio/apps/2b73cc58-b9a8-425b-a6b8-f9842a565dad
+- Real-time multiplayer rooms with live board updates and garbage/attack mechanics
+- Responsive UI built with React and Tailwind CSS
+- WebSocket gameplay powered by Socket.io
+- In-memory room and player state (no database)
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- Frontend: React 19, Vite, Tailwind CSS, motion
+- Backend: Node.js, Express, Socket.io
+- Infrastructure: Terraform for AWS App Runner, GCP Cloud Run, and Render
 
+## Local Development
 
+Prerequisites:
+- Node.js 20+ recommended
+
+Steps:
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Run the app:
    `npm run dev`
+3. Open:
+   `http://localhost:8080`
 
-## Observability (OpenTelemetry)
+## Environment Configuration
 
-This server ships with **optional** OpenTelemetry tracing and metrics. It is disabled by default.
+Environments are controlled by settings YAMLs and infrastructure YAMLs:
 
-### Enable tracing + metrics
+- Environment settings: `config/<env>-settings.yaml`
+- Infrastructure settings: `config/Infrastructure/*.yaml`
 
-Set an OTLP endpoint (HTTP) or enable explicitly:
-
-```bash
-export OBSERVABILITY_ENABLED=true
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
-npm run dev
-```
-
-### Optional settings
+To switch environments and regenerate `.env`:
 
 ```bash
-export OTEL_SERVICE_NAME="battletris-server"
-export OTEL_LOG_LEVEL="info"
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:4318/v1/traces"
-export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT="http://localhost:4318/v1/metrics"
+./scripts/switch-env.sh DEV
 ```
+
+The generated `.env` includes the active `INFRASTRUCTURE` reference, and frontend URLs are derived from the infrastructure file.
+
+## Development Process
+
+Typical workflow:
+
+1. Make changes locally.
+2. Run lint/build:
+   `npm run lint` and `npm run build`
+3. Create a release tag:
+   `./scripts/check-version.sh`
+4. Build artifacts once and publish them:
+   `./scripts/build-artifacts.sh vX.Y.Z`
+5. Deploy using GitHub Actions (Deploy workflow) or the provided scripts.
+
+## Build Once, Deploy Many
+
+Deployments use tagged Docker artifacts instead of building during deploy. See `BUILD_ONCE_DEPLOY_MANY.md` for the full process.
+
+## Observability
+
+OpenTelemetry tracing and metrics are supported and disabled by default. See `OBSERVABILITY.md` for how to enable and configure exporters.
 
 ## Secret Lifecycle Guidance
 
@@ -57,10 +79,16 @@ This works early on, but as deployments grow it creates three risks:
    If a key is compromised, you’d have to manually update multiple files and redeploy everywhere. There’s no standard rotation or audit trail.
 
 3. **Access control & audit gaps**  
-   `.env` files aren’t tied to IAM policies or audit logs. A secret manager gives you:
-   - access control (who can read it)
-   - version history
-   - automatic rotation support
+   `.env` files aren’t tied to IAM policies or audit logs. A secret manager gives you access control, version history, and automatic rotation support.
 
 What it means in practice:
 As the number of environments grows, manual secrets quickly become brittle and unsafe. A centralized secret manager avoids duplication, provides auditability, and makes rotation manageable.
+
+## Solution Architecture (High Level)
+
+- The frontend is a React SPA built by Vite.
+- The backend is a Node.js + Express server with Socket.io for realtime gameplay.
+- The same Node.js process serves static assets and WebSocket traffic.
+- Room/player state is in-memory and cleaned up on timers.
+
+For the detailed architecture diagram and patterns, see `architecture_readme.md`.

@@ -51,9 +51,10 @@ fi
 region="$(read_setting_any "$infra_file" "Region")"
 service_name="$(read_setting_any "$infra_file" "WebService" "AWS Service" "Service Name" "Service")"
 app_image="$(read_setting_any "$infra_file" "Application Image" "ApplicationImage" "Image")"
-tag="$(read_setting_any "$infra_file" "Tag" "Image Tag")"
+tag_override="${1:-${IMAGE_TAG:-}}"
+tag_from_infra="$(read_setting_any "$infra_file" "Tag" "Image Tag")"
 account_id="$(read_setting_any "$infra_file" "AccountID" "Account Id" "Account")"
-target_arch="$(read_setting_any "$infra_file" "Target Architecture" "TargetArchitecture")"
+auto_deploy="$(read_setting_any "$infra_file" "Auto Deploy")"
 service_arn="$(read_setting_any "$infra_file" "Service ARN" "ServiceArn")"
 
 if [[ -z "$region" || -z "$service_name" || -z "$account_id" || -z "$app_image" ]]; then
@@ -61,14 +62,15 @@ if [[ -z "$region" || -z "$service_name" || -z "$account_id" || -z "$app_image" 
   exit 1
 fi
 
-if [[ -z "$target_arch" ]]; then
-  echo "Error: Missing Target Architecture in $infra_file."
-  exit 1
-fi
-
+tag="${tag_override:-$tag_from_infra}"
 if [[ -z "$tag" ]]; then
   tag="latest"
 fi
+
+if [[ -z "$auto_deploy" ]]; then
+  auto_deploy="true"
+fi
+auto_deploy=$(echo "$auto_deploy" | tr '[:upper:]' '[:lower:]')
 
 aws_account=""
 if aws_account=$(aws sts get-caller-identity --query Account --output text 2>/dev/null); then
@@ -78,23 +80,14 @@ else
   exit 1
 fi
 
-local_image="$service_name"
-if [[ "$app_image" == *".amazonaws.com/"* ]]; then
-  local_image="$(basename "$app_image")"
-  local_image="${local_image%%:*}"
-else
-  local_image="$app_image"
-fi
-
-registry="${account_id}.dkr.ecr.${region}.amazonaws.com"
 if [[ "$app_image" == *".amazonaws.com/"* ]]; then
   if [[ "$app_image" == *":"* ]]; then
     ecr_image="$app_image"
   else
     ecr_image="${app_image}:${tag}"
   fi
-  registry="${app_image%%/*}"
 else
+  registry="${account_id}.dkr.ecr.${region}.amazonaws.com"
   ecr_image="${registry}/${app_image}:${tag}"
 fi
 
@@ -110,20 +103,44 @@ if [[ -z "$service_arn" || "$service_arn" == "None" ]]; then
   exit 1
 fi
 
-echo "Building Docker image for ${target_arch}..."
-docker build --platform "$target_arch" -t "$local_image" .
+repo_name="$app_image"
+if [[ "$repo_name" == *".amazonaws.com/"* ]]; then
+  repo_name="${repo_name##*/}"
+  repo_name="${repo_name%%:*}"
+fi
 
-echo "Logging in to ECR registry ${registry}..."
-aws ecr get-login-password --region "$region" | docker login --username AWS --password-stdin "$registry"
+if ! aws ecr describe-images --repository-name "$repo_name" --image-ids imageTag="$tag" --region "$region" >/dev/null 2>&1; then
+  echo "Error: Image tag '$tag' not found in ECR repository '$repo_name' (region ${region})."
+  echo "Build and push the image first using ./scripts/build-artifacts.sh or your CI pipeline."
+  exit 1
+fi
 
-echo "Tagging image: ${local_image}:latest -> ${ecr_image}"
-docker tag "${local_image}:latest" "$ecr_image"
+access_role_arn=$(aws apprunner describe-service \
+  --region "$region" \
+  --service-arn "$service_arn" \
+  --query "Service.SourceConfiguration.AuthenticationConfiguration.AccessRoleArn" \
+  --output text)
 
-echo "Pushing image to ECR..."
-docker push "$ecr_image"
+if [[ -z "$access_role_arn" || "$access_role_arn" == "None" ]]; then
+  echo "Error: Unable to resolve App Runner access role ARN for ${service_name}."
+  exit 1
+fi
 
-echo "Starting App Runner deployment..."
-aws apprunner start-deployment --service-arn "$service_arn" --region "$region"
+container_port=$(aws apprunner describe-service \
+  --region "$region" \
+  --service-arn "$service_arn" \
+  --query "Service.SourceConfiguration.ImageRepository.ImageConfiguration.Port" \
+  --output text)
+
+if [[ -z "$container_port" || "$container_port" == "None" ]]; then
+  container_port="8080"
+fi
+
+echo "Updating App Runner service to image ${ecr_image} (auto_deploy=${auto_deploy})..."
+aws apprunner update-service \
+  --region "$region" \
+  --service-arn "$service_arn" \
+  --source-configuration "ImageRepository={ImageIdentifier=${ecr_image},ImageRepositoryType=ECR,ImageConfiguration={Port=${container_port}}},AuthenticationConfiguration={AccessRoleArn=${access_role_arn}},AutoDeploymentsEnabled=${auto_deploy}"
 
 service_url=$(aws apprunner describe-service \
   --region "$region" \
@@ -131,5 +148,5 @@ service_url=$(aws apprunner describe-service \
   --query "Service.ServiceUrl" \
   --output text)
 
-echo "Deployment triggered for ${service_name} in ${region}."
+echo "Deployment triggered for ${service_name} in ${region} (image tag ${tag})."
 echo "Service URL: https://${service_url}"

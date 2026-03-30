@@ -51,10 +51,19 @@ fi
 region="$(read_setting_any "$infra_file" "Region")"
 service_name="$(read_setting_any "$infra_file" "WebService" "Service Name" "Service")"
 project_id="$(read_setting_any "$infra_file" "GCP ProjectID" "Project ID" "ProjectID")"
+repo_id="$(read_setting_any "$infra_file" "Artifact Registry Repo" "ArtifactRegistryRepo")"
+app_image="$(read_setting_any "$infra_file" "Application Image" "ApplicationImage")"
+tag_override="${1:-${IMAGE_TAG:-}}"
+tag_from_infra="$(read_setting_any "$infra_file" "Tag" "Image Tag")"
 
-if [[ -z "$region" || -z "$service_name" || -z "$project_id" ]]; then
-  echo "Error: Missing required fields in $infra_file. Need GCP ProjectID, Region, WebService."
+if [[ -z "$region" || -z "$service_name" || -z "$project_id" || -z "$repo_id" || -z "$app_image" ]]; then
+  echo "Error: Missing required fields in $infra_file. Need GCP ProjectID, Region, WebService, Artifact Registry Repo, Application Image."
   exit 1
+fi
+
+tag="${tag_override:-$tag_from_infra}"
+if [[ -z "$tag" ]]; then
+  tag="latest"
 fi
 
 active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || true)"
@@ -67,8 +76,16 @@ echo "GCP account in use: $active_account"
 
 gcloud config set project "$project_id" >/dev/null
 
-echo "Deploying to Cloud Run service ${service_name} in ${region}..."
-gcloud run deploy "$service_name" --source . --region "$region" --allow-unauthenticated --project "$project_id"
+image_uri="${region}-docker.pkg.dev/${project_id}/${repo_id}/${app_image}:${tag}"
+
+if ! gcloud artifacts docker images describe "$image_uri" --project "$project_id" >/dev/null 2>&1; then
+  echo "Error: Image ${image_uri} not found in Artifact Registry."
+  echo "Build and push the image first using ./scripts/build-artifacts.sh or your CI pipeline."
+  exit 1
+fi
+
+echo "Deploying image ${image_uri} to Cloud Run service ${service_name} in ${region}..."
+gcloud run deploy "$service_name" --image "$image_uri" --region "$region" --allow-unauthenticated --project "$project_id"
 
 service_url=$(gcloud run services describe "$service_name" --region "$region" --project "$project_id" --format='value(status.url)')
 
