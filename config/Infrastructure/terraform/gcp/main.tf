@@ -22,38 +22,22 @@ provider "google" {
   region  = local.infra["Region"]
 }
 
-resource "google_artifact_registry_repository" "app" {
-  location      = local.infra["Region"]
-  repository_id = local.repo_id
-  format        = "DOCKER"
-  description   = "BattleTris Cloud Run images"
-}
-
-resource "google_cloud_run_v2_service" "app" {
-  name     = local.service_name
-  location = local.infra["Region"]
-
-  template {
-    containers {
-      image = local.image_uri
-      ports {
-        container_port = var.container_port
-      }
-    }
-  }
-
-  traffic {
-    percent = 100
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-  }
+module "cloud_run" {
+  source         = "../modules/gcp-cloud-run"
+  project_id     = local.infra["GCP ProjectID"]
+  region         = local.infra["Region"]
+  service_name   = local.service_name
+  repository_id  = local.repo_id
+  image_uri      = local.image_uri
+  container_port = var.container_port
 }
 
 output "service_url" {
-  value = google_cloud_run_v2_service.app.uri
+  value = module.cloud_run.service_url
 }
 
 output "artifact_registry_repo" {
-  value = google_artifact_registry_repository.app.id
+  value = module.cloud_run.artifact_registry_repo
 }
 
 output "project_id" {

@@ -6,6 +6,7 @@ terraform {
       version = "~> 5.0"
     }
   }
+  backend "s3" {}
 }
 
 locals {
@@ -22,72 +23,22 @@ provider "aws" {
   region = local.infra["Region"]
 }
 
-resource "aws_ecr_repository" "app" {
-  name                 = local.ecr_name
-  image_tag_mutability = "MUTABLE"
-  force_delete         = false
-}
-
-resource "aws_iam_role" "apprunner_access" {
-  name               = "${local.service_name}-apprunner-access"
-  assume_role_policy = data.aws_iam_policy_document.apprunner_assume.json
-}
-
-resource "aws_iam_role_policy_attachment" "apprunner_ecr_access" {
-  role       = aws_iam_role.apprunner_access.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
-}
-
-data "aws_iam_policy_document" "apprunner_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["build.apprunner.amazonaws.com", "tasks.apprunner.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_apprunner_service" "app" {
-  service_name = local.service_name
-
-  source_configuration {
-    authentication_configuration {
-      access_role_arn = aws_iam_role.apprunner_access.arn
-    }
-
-    image_repository {
-      image_identifier      = local.image_identifier
-      image_repository_type = "ECR"
-
-      image_configuration {
-        port = var.container_port
-      }
-    }
-
-    auto_deployments_enabled = true
-  }
-
-  health_check_configuration {
-    protocol            = "TCP"
-    healthy_threshold   = 1
-    unhealthy_threshold = 5
-    interval            = 10
-    timeout             = 5
-  }
-
-  instance_configuration {
-    cpu    = var.instance_cpu
-    memory = var.instance_memory
-  }
+module "app_runner" {
+  source              = "../modules/aws-app-runner"
+  service_name        = local.service_name
+  ecr_repository_name = local.ecr_name
+  image_identifier    = local.image_identifier
+  container_port      = var.container_port
+  instance_cpu        = var.instance_cpu
+  instance_memory     = var.instance_memory
 }
 
 output "service_url" {
-  value = aws_apprunner_service.app.service_url
+  value = module.app_runner.service_url
 }
 
 output "ecr_repository_url" {
-  value = aws_ecr_repository.app.repository_url
+  value = module.app_runner.ecr_repository_url
 }
 
 output "region" {

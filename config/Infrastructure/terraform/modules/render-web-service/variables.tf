@@ -4,9 +4,21 @@ variable "render_api_key" {
   sensitive   = true
 }
 
+variable "owner_id" {
+  type        = string
+  description = "Render owner ID"
+  default     = ""
+}
+
+variable "service_name" {
+  type        = string
+  description = "Render service name"
+}
+
 variable "repo" {
   type        = string
   description = "Git repo URL (HTTPS)"
+  default     = ""
 }
 
 variable "branch" {
@@ -33,21 +45,15 @@ variable "region" {
   default     = ""
 }
 
-variable "service_name" {
-  type        = string
-  description = "Render service name override"
-  default     = ""
-}
-
 variable "build_command" {
   type        = string
-  description = "Build command override"
+  description = "Build command"
   default     = ""
 }
 
 variable "start_command" {
   type        = string
-  description = "Start command override"
+  description = "Start command"
   default     = ""
 }
 

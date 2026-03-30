@@ -9,29 +9,32 @@ terraform {
 }
 
 locals {
-  infra = yamldecode(file(abspath("${path.module}/../../render.yaml")))
-  service = local.infra.services[0]
+  infra        = yamldecode(file(abspath("${path.module}/../../render.yaml")))
+  service_name = var.service_name != "" ? var.service_name : local.infra["WebService"]
+  repo         = var.repo != "" ? var.repo : local.infra["Repository"]
+  region       = var.region != "" ? var.region : try(local.infra["Region"], "")
 }
 
-provider "render" {
-  api_key = var.render_api_key
-}
-
-resource "render_web_service" "app" {
-  name           = var.service_name != "" ? var.service_name : local.service.name
-  repo           = var.repo
-  branch         = var.branch
-  env            = var.runtime
-  plan           = var.plan
-  build_command  = var.build_command != "" ? var.build_command : local.service.buildCommand
-  start_command  = var.start_command != "" ? var.start_command : local.service.startCommand
-  auto_deploy    = var.auto_deploy
+module "render_service" {
+  source             = "../modules/render-web-service"
+  render_api_key     = var.render_api_key
+  owner_id           = try(local.infra["Render OwnerID"], "")
+  service_name       = local.service_name
+  repo               = local.repo
+  branch             = var.branch
+  runtime            = var.runtime
+  plan               = var.plan
+  region             = local.region
+  build_command      = var.build_command
+  start_command      = var.start_command
+  auto_deploy        = var.auto_deploy
+  use_native_runtime = var.use_native_runtime
 }
 
 output "service_name" {
-  value = render_web_service.app.name
+  value = module.render_service.service_name
 }
 
 output "service_url" {
-  value = render_web_service.app.url
+  value = module.render_service.service_url
 }
