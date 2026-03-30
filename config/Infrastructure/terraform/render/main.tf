@@ -6,6 +6,7 @@ terraform {
       version = "~> 1.0"
     }
   }
+  backend "s3" {}
 }
 
 locals {
@@ -13,6 +14,7 @@ locals {
   service_name = var.service_name != "" ? var.service_name : local.infra["WebService"]
   repo         = var.repo != "" ? var.repo : local.infra["Repository"]
   region       = var.region != "" ? var.region : try(local.infra["Region"], "")
+  auto_deploy  = try(local.infra["Auto Deploy"], var.auto_deploy)
 }
 
 module "render_service" {
@@ -27,7 +29,7 @@ module "render_service" {
   region             = local.region
   build_command      = var.build_command
   start_command      = var.start_command
-  auto_deploy        = var.auto_deploy
+  auto_deploy        = local.auto_deploy
   use_native_runtime = var.use_native_runtime
 }
 

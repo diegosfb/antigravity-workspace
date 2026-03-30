@@ -6,11 +6,13 @@ terraform {
       version = "~> 1.0"
     }
   }
+  backend "s3" {}
 }
 
 locals {
   infra  = yamldecode(file(abspath("${path.module}/../../render-dev.yaml")))
   region = coalesce(try(local.infra["Region"], ""), var.region)
+  auto_deploy = try(local.infra["Auto Deploy"], var.auto_deploy)
 }
 
 module "render_service" {
@@ -25,7 +27,7 @@ module "render_service" {
   region             = local.region
   build_command      = var.build_command
   start_command      = var.start_command
-  auto_deploy        = var.auto_deploy
+  auto_deploy        = local.auto_deploy
   use_native_runtime = true
 }
 

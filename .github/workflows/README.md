@@ -30,3 +30,18 @@ The `ci.yml` workflow runs four jobs:
 ## Notes
 - If the secret scan finds a leak, treat it as a real incident: revoke the key and rotate credentials.
 - If `npm audit` fails on a false positive, document it and consider suppressing it explicitly with a policy tool.
+
+## Production Approval Gate (GitHub Environments)
+
+The `deploy.yml` workflow uses GitHub Environments so production deployments can require manual approval.
+
+### How to configure the `prod` approval rule
+1. Go to **GitHub → Repository → Settings → Environments**.
+2. Create (or select) an environment named **`prod`**.
+3. Under **Deployment protection rules**, enable **Required reviewers**.
+4. Add the users or team that must approve production deployments.
+5. (Optional) Add environment secrets for prod (e.g., cloud credentials).
+
+### How it works
+- The workflow uses `environment: prod` when you select `prod` in the dispatch input.
+- GitHub will pause the job until an approved reviewer grants access.

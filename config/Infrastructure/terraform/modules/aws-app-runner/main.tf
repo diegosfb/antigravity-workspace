@@ -50,7 +50,7 @@ resource "aws_apprunner_service" "app" {
       }
     }
 
-    auto_deployments_enabled = true
+    auto_deployments_enabled = var.auto_deploy
   }
 
   health_check_configuration {

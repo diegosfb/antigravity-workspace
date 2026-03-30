@@ -159,11 +159,16 @@ case "$STACK_NAME" in
 
 (
   cd "$STACK_DIR"
-  if [[ "$STACK_NAME" == "aws" || "$STACK_NAME" == "aws-dev" ]]; then
+  if [[ "$STACK_NAME" != "local" ]]; then
     state_bucket="${TF_STATE_BUCKET:-amzn-s3-terraform-build}"
-    state_region="${TF_STATE_REGION:-$(read_setting "$INFRA_FILE" "Region")}"
     lock_table="${TF_STATE_LOCK_TABLE:-bettertris-terraform-lock}"
     state_key="bettertris/${STACK_NAME}/terraform.tfstate"
+
+    if [[ "$STACK_NAME" == "aws" || "$STACK_NAME" == "aws-dev" ]]; then
+      state_region="${TF_STATE_REGION:-$(read_setting "$INFRA_FILE" "Region")}"
+    else
+      state_region="${TF_STATE_REGION:-us-east-2}"
+    fi
 
     init_args=(
       -backend-config="bucket=${state_bucket}"

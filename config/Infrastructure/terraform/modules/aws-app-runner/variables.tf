@@ -30,3 +30,9 @@ variable "instance_memory" {
   description = "App Runner memory"
   default     = "2048"
 }
+
+variable "auto_deploy" {
+  type        = bool
+  description = "Enable App Runner auto deployments"
+  default     = true
+}

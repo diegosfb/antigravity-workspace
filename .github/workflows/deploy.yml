@@ -1,0 +1,155 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - dev
+          - qa
+          - uat
+          - prod
+        required: true
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Switch environment
+        run: ./scripts/switch-env.sh ${{ inputs.environment }}
+
+      - name: Resolve infrastructure
+        id: infra
+        run: |
+          set -euo pipefail
+          infra_ref=$(awk -F'=' '/^INFRASTRUCTURE=/{sub(/^INFRASTRUCTURE=/, ""); print; exit}' .env)
+          if [ -z "$infra_ref" ]; then
+            echo "INFRASTRUCTURE not set in .env" >&2
+            exit 1
+          fi
+          if [[ "$infra_ref" = /* ]]; then
+            infra_file="$infra_ref"
+          else
+            infra_file="$PWD/$infra_ref"
+          fi
+          if [ ! -f "$infra_file" ]; then
+            echo "Infrastructure file not found: $infra_file" >&2
+            exit 1
+          fi
+
+          read_key() {
+            awk -F': ' -v k="$1" 'tolower($1)==tolower(k){$1=""; sub(/^: /,""); print; exit}' "$infra_file" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+          }
+
+          platform=$(read_key "Platform")
+          cloud=$(read_key "Cloud Service")
+          region=$(read_key "Region")
+          service=$(read_key "WebService")
+          account=$(read_key "AccountID")
+          app_image=$(read_key "Application Image")
+          project_id=$(read_key "GCP ProjectID")
+
+          echo "platform=$platform" >> "$GITHUB_OUTPUT"
+          echo "cloud=$cloud" >> "$GITHUB_OUTPUT"
+          echo "region=$region" >> "$GITHUB_OUTPUT"
+          echo "service=$service" >> "$GITHUB_OUTPUT"
+          echo "account=$account" >> "$GITHUB_OUTPUT"
+          echo "app_image=$app_image" >> "$GITHUB_OUTPUT"
+          echo "project_id=$project_id" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy (AWS App Runner)
+        if: steps.infra.outputs.platform == 'AWS' && steps.infra.outputs.cloud == 'AppRunner'
+        env:
+          AWS_REGION: ${{ steps.infra.outputs.region }}
+          SERVICE_NAME: ${{ steps.infra.outputs.service }}
+          ACCOUNT_ID: ${{ steps.infra.outputs.account }}
+          APP_IMAGE: ${{ steps.infra.outputs.app_image }}
+        run: |
+          set -euo pipefail
+          repo_name="$APP_IMAGE"
+          if [[ "$repo_name" == *".amazonaws.com/"* ]]; then
+            repo_name="${repo_name##*/}"
+            repo_name="${repo_name%%:*}"
+          fi
+
+          prev_digest=""
+          if aws ecr describe-images --repository-name "$repo_name" --image-ids imageTag=latest --region "$AWS_REGION" >/dev/null 2>&1; then
+            prev_digest=$(aws ecr describe-images --repository-name "$repo_name" --image-ids imageTag=latest --region "$AWS_REGION" --query 'imageDetails[0].imageDigest' --output text)
+          fi
+
+          service_arn=$(aws apprunner list-services --region "$AWS_REGION" --query "ServiceSummaryList[?ServiceName=='${SERVICE_NAME}'].ServiceArn | [0]" --output text)
+          if [[ -z "$service_arn" || "$service_arn" == "None" ]]; then
+            echo "Unable to resolve App Runner service ARN for ${SERVICE_NAME}" >&2
+            exit 1
+          fi
+
+          if ! ./scripts/deploy-aws-apprunner.sh; then
+            echo "Deploy failed. Attempting rollback..."
+            if [[ -n "$prev_digest" ]]; then
+              manifest=$(aws ecr batch-get-image --repository-name "$repo_name" --image-ids imageDigest="$prev_digest" --query 'images[0].imageManifest' --output text)
+              if [[ -n "$manifest" && "$manifest" != "None" ]]; then
+                aws ecr put-image --repository-name "$repo_name" --image-tag latest --image-manifest "$manifest"
+                aws apprunner start-deployment --service-arn "$service_arn" --region "$AWS_REGION"
+                echo "Rollback triggered to previous image digest." 
+              fi
+            fi
+            exit 1
+          fi
+
+          if ! ./scripts/check-aws-deployment.sh "$service_arn" "$AWS_REGION"; then
+            echo "Deployment verification failed. Attempting rollback..."
+            if [[ -n "$prev_digest" ]]; then
+              manifest=$(aws ecr batch-get-image --repository-name "$repo_name" --image-ids imageDigest="$prev_digest" --query 'images[0].imageManifest' --output text)
+              if [[ -n "$manifest" && "$manifest" != "None" ]]; then
+                aws ecr put-image --repository-name "$repo_name" --image-tag latest --image-manifest "$manifest"
+                aws apprunner start-deployment --service-arn "$service_arn" --region "$AWS_REGION"
+                echo "Rollback triggered to previous image digest." 
+              fi
+            fi
+            exit 1
+          fi
+
+      - name: Deploy (GCP Cloud Run)
+        if: steps.infra.outputs.platform == 'GCP' && steps.infra.outputs.cloud == 'CloudRun'
+        env:
+          GCP_PROJECT: ${{ steps.infra.outputs.project_id }}
+          GCP_REGION: ${{ steps.infra.outputs.region }}
+          SERVICE_NAME: ${{ steps.infra.outputs.service }}
+        run: |
+          set -euo pipefail
+          prev_rev=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT" --format='value(status.traffic[0].revisionName)' 2>/dev/null || true)
+
+          if ! ./scripts/deploy-gcp-cloudrun.sh; then
+            echo "Deploy failed. Attempting rollback..."
+            if [[ -n "$prev_rev" ]]; then
+              gcloud run services update-traffic "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT" --to-revisions "${prev_rev}=100"
+              echo "Rolled back traffic to ${prev_rev}."
+            fi
+            exit 1
+          fi
+
+      - name: Deploy (Render)
+        if: steps.infra.outputs.platform == 'Render'
+        run: |
+          echo "Render deployments are triggered by repository pushes or manual dashboard actions."
+          echo "If Auto Deploy is disabled for prod, trigger a deploy in the Render dashboard."
