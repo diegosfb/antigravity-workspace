@@ -7,8 +7,9 @@ coverage/
 .env*
 !.env.example
 !.env
+!config/.env
+!config/.env.example
 
-config/.env
 
 # Terraform
 **/.terraform/
