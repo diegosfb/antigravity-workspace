@@ -6,6 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env
 
 config/.env
 
@@ -14,5 +15,3 @@ config/.env
 **/.terraform.lock.hcl
 **/terraform.tfstate
 **/terraform.tfstate.*
-
-.env
