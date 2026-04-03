@@ -1,1 +1,1 @@
-# Antigravity workspace\n\n## Overview\nShort description.\n\n## Structure\n- .agent/\n- .github/\n- config/\n- scripts/\n\n## Local Setup\n1. Add environment variables to .env.\n2. Install dependencies.\n3. Run the app.\n
+# Antigravity workspace Initial Setup
