@@ -1,0 +1,15 @@
+Terraform needs a state file that records what it created (IDs, IPs, ARNs, URLs, etc.). That state is the source of truth for future updates.
+
+Right now, in config/Infrastructure/terraform/**, there’s no backend configuration, which means Terraform will default to local state (a terraform.tfstate file on whoever runs it).
+
+Why that’s risky:
+
+Drift: If two people run Terraform from different machines, they have different state files. Each one thinks the other’s resources don’t exist and may try to recreate or destroy them.
+Lost state: If the local state file is deleted or lost, Terraform can no longer track existing infrastructure correctly. That can lead to accidental re‑creation or deletion.
+Unsafe concurrency: With local state there’s no locking. Two applies at the same time can corrupt state or cause conflicting changes.
+A remote backend (S3 for AWS, GCS for GCP, or Terraform Cloud) solves this by storing state centrally, enabling locks, and keeping everyone in sync.
+
+So the concern is: your Terraform is correct, but the state isn’t safely managed, which makes infra changes fragile as soon as more than one person or environment is involved.
+
+It cannot use Google Drive.
+So it is configured right now on AWS Se diegosfb@gmail.com account amzn-s3-terraform-build S3 bucket
