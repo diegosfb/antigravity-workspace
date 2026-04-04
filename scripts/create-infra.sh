@@ -161,8 +161,8 @@ case "$STACK_NAME" in
   cd "$STACK_DIR"
   if [[ "$STACK_NAME" != "local" ]]; then
     state_bucket="${TF_STATE_BUCKET:-amzn-s3-terraform-build}"
-    lock_table="${TF_STATE_LOCK_TABLE:-bettertris-terraform-lock}"
-    state_key="bettertris/${STACK_NAME}/terraform.tfstate"
+    lock_table="${TF_STATE_LOCK_TABLE:-AA2-terraform-lock}"
+    state_key="AA2/${STACK_NAME}/terraform.tfstate"
 
     if [[ "$STACK_NAME" == "aws" || "$STACK_NAME" == "aws-dev" ]]; then
       state_region="${TF_STATE_REGION:-$(read_setting "$INFRA_FILE" "Region")}"

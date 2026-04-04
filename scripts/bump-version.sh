@@ -18,7 +18,7 @@ bump_node() {
     # Use npm version to handle the complex JSON update without jq
     npm version "$TYPE" --no-git-tag-version > /dev/null
     
-    # Also update any src/App.tsx version strings if they exist (BattleTris specific but safe)
+    # Also update any src/App.tsx version strings if they exist (AA2 specific but safe)
     local app_tsx="$PROJECT_ROOT/src/App.tsx"
     if [ -f "$app_tsx" ]; then
         local new_version=$(node -p "require('./package.json').version")

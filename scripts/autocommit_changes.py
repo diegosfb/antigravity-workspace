@@ -14,19 +14,12 @@ import signal
 import sys
 import time
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 INTERVAL = float(os.getenv("AGENTIC_CHECKPOINT_INTERVAL", "2.0"))
-
-
-def get_git_dir() -> str:
-    res = run(["git", "rev-parse", "--git-dir"])
-    git_dir = res.stdout.decode(errors="replace").strip()
-    return git_dir or ".git"
-
-
-def pid_path() -> str:
-    return os.path.join(get_git_dir(), ".agentic_autocommit.pid")
+ENV_FLAG_NAME = "autocommiting"
+ENV_PID_NAME = "autocommit_pid"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def run(cmd: List[str]) -> subprocess.CompletedProcess:
@@ -34,6 +27,94 @@ def run(cmd: List[str]) -> subprocess.CompletedProcess:
     # Never prompt; fail fast if git would ask for input.
     env["GIT_TERMINAL_PROMPT"] = "0"
     return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+
+def env_path() -> str:
+    return os.path.join(PROJECT_ROOT, ".env")
+
+
+def migrate_pidfile() -> None:
+    legacy_paths = [
+        os.path.join(PROJECT_ROOT, ".agent", "agentic_autocommit.pid"),
+        os.path.join(PROJECT_ROOT, ".git", ".agentic_autocommit.pid"),
+    ]
+    current_pid = read_env_value(ENV_PID_NAME)
+    for path in legacy_paths:
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                pid_value = handle.read().strip()
+        except Exception:
+            pid_value = ""
+        if pid_value and not current_pid:
+            set_env_value(ENV_PID_NAME, pid_value)
+            current_pid = pid_value
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+def normalize_env_value(value: str) -> str:
+    stripped = value.strip().strip('"').strip("'")
+    return stripped.lower()
+
+
+def read_env_flag() -> str:
+    return read_env_value(ENV_FLAG_NAME)
+
+
+def read_env_value(key: str) -> str:
+    path = env_path()
+    if not os.path.exists(path):
+        return ""
+    raw = ""
+    with open(path, "r", encoding="utf-8") as handle:
+        for line in handle.read().splitlines():
+            if not line or line.lstrip().startswith("#"):
+                continue
+            entry = line
+            if entry.startswith("export "):
+                entry = entry[len("export "):]
+            if "=" not in entry:
+                continue
+            found_key, value = entry.split("=", 1)
+            if found_key.strip() == key:
+                raw = value.strip()
+                break
+    return raw
+
+
+def set_env_value(key: str, value: Optional[str]) -> None:
+    path = env_path()
+    existing_lines = []
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as handle:
+            existing_lines = handle.read().splitlines()
+
+    updated_lines: List[str] = []
+    found = False
+    for line in existing_lines:
+        if line.lstrip().startswith("#") or "=" not in line:
+            updated_lines = [*updated_lines, line]
+            continue
+        entry = line
+        if entry.startswith("export "):
+            entry = entry[len("export "):]
+        line_key = entry.split("=", 1)[0].strip()
+        if line_key == key:
+            if value is not None:
+                updated_lines = [*updated_lines, f'{key}={value}']
+            found = True
+        else:
+            updated_lines = [*updated_lines, line]
+
+    if not found and value is not None:
+        updated_lines = [*updated_lines, f'{key}={value}']
+
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(updated_lines) + "\n")
 
 
 def get_changed_paths() -> List[str]:
@@ -111,6 +192,8 @@ def print_usage() -> None:
     print("Usage:")
     print("  autocommit_changes.py start  # Start background auto-commit + push")
     print("  autocommit_changes.py stop   # Stop the background process")
+    print("  autocommit_changes.py status # Print `running` or `not running`")
+    print("  autocommit_changes.py ensure # Start if autocommiting=TRUE in .env")
 
 
 def is_running(pid: int) -> bool:
@@ -122,19 +205,17 @@ def is_running(pid: int) -> bool:
 
 
 def start_daemon() -> None:
-    pidfile = pid_path()
-    if os.path.exists(pidfile):
+    migrate_pidfile()
+    existing_pid_raw = read_env_value(ENV_PID_NAME)
+    if existing_pid_raw:
         try:
-            existing = int(open(pidfile, "r").read().strip())
+            existing_pid = int(existing_pid_raw.strip().strip('"').strip("'"))
         except Exception:
-            existing = None
-        if existing and is_running(existing):
-            print(f"Already running (pid {existing}).")
+            existing_pid = None
+        if existing_pid and is_running(existing_pid):
+            print(f"Already running (pid {existing_pid}).")
+            set_env_value(ENV_FLAG_NAME, '"TRUE"')
             return
-        try:
-            os.remove(pidfile)
-        except OSError:
-            pass
 
     # Spawn detached child running the loop.
     env = os.environ.copy()
@@ -147,31 +228,29 @@ def start_daemon() -> None:
         env=env,
         start_new_session=True,
     )
-    with open(pidfile, "w") as f:
-        f.write(str(proc.pid))
+    set_env_value(ENV_FLAG_NAME, '"TRUE"')
+    set_env_value(ENV_PID_NAME, str(proc.pid))
     print(f"Started (pid {proc.pid}).")
 
 
 def stop_daemon() -> None:
-    pidfile = pid_path()
-    if not os.path.exists(pidfile):
+    migrate_pidfile()
+    pid_value = read_env_value(ENV_PID_NAME)
+    pid = None
+    if pid_value:
+        try:
+            pid = int(pid_value.strip().strip('"').strip("'"))
+        except Exception:
+            pid = None
+
+    if pid and is_running(pid):
+        os.kill(pid, signal.SIGTERM)
+        print("Stopped.")
+    else:
         print("Not running.")
-        return
-    try:
-        pid = int(open(pidfile, "r").read().strip())
-    except Exception:
-        print("Could not read pidfile; removing it.")
-        os.remove(pidfile)
-        return
 
-    if not is_running(pid):
-        print("Process not running; removing stale pidfile.")
-        os.remove(pidfile)
-        return
-
-    os.kill(pid, signal.SIGTERM)
-    os.remove(pidfile)
-    print("Stopped.")
+    set_env_value(ENV_FLAG_NAME, "false")
+    set_env_value(ENV_PID_NAME, None)
 
 
 def run_loop() -> None:
@@ -180,6 +259,38 @@ def run_loop() -> None:
         if paths:
             commit_checkpoint(paths)
         time.sleep(INTERVAL)
+
+
+def status() -> None:
+    migrate_pidfile()
+    running = False
+    pid = None
+    pid_value = read_env_value(ENV_PID_NAME)
+    if pid_value:
+        try:
+            pid = int(pid_value.strip().strip('"').strip("'"))
+        except Exception:
+            pid = None
+    if pid and is_running(pid):
+        running = True
+
+    if running:
+        print("running")
+    else:
+        print("not running")
+
+
+def ensure_from_env() -> None:
+    migrate_pidfile()
+    flag_value = read_env_flag()
+    if not flag_value:
+        print(f"{ENV_FLAG_NAME} is not set; no action taken.")
+        return
+    normalized = normalize_env_value(flag_value)
+    if normalized in ("true", "1", "yes", "y"):
+        start_daemon()
+        return
+    print(f"{ENV_FLAG_NAME} is set to {flag_value}; no action taken.")
 
 
 def main() -> None:
@@ -191,6 +302,10 @@ def main() -> None:
         start_daemon()
     elif cmd == "stop":
         stop_daemon()
+    elif cmd == "status":
+        status()
+    elif cmd == "ensure":
+        ensure_from_env()
     elif cmd == "run":
         run_loop()
     else:

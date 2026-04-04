@@ -38,6 +38,11 @@ fi
 echo "$TARGET" > "$ACTIVE_ENV_FILE"
 echo "Switched to $TARGET environment (.env updated via YAML generation)."
 
+# 3. Auto-start autocommit if .env flag is set
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    "$PROJECT_ROOT/scripts/autocommit_changes.py" ensure
+fi
+
 # 4. Update architecture_readme.md (if it exists)
 if [ -f "$ARCHITECTURE_DOC" ]; then
     # Use sed to update the "Active Environment" marker if present, 

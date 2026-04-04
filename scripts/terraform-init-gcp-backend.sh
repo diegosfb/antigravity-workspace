@@ -4,7 +4,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_BUCKET="amzn-s3-terraform-build"
-LOCK_TABLE="bettertris-terraform-lock"
+LOCK_TABLE="AA2-terraform-lock"
 REGION="us-east-2"
 
 init_stack() {
@@ -20,6 +20,6 @@ init_stack() {
     -backend-config="encrypt=true")
 }
 
-init_stack "$PROJECT_ROOT/config/Infrastructure/terraform/gcp" "bettertris/gcp/terraform.tfstate"
+init_stack "$PROJECT_ROOT/config/Infrastructure/terraform/gcp" "AA2/gcp/terraform.tfstate"
 
 echo "GCP Terraform backend initialized."

@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_file="$project_root/.env"
+autocommit_flag=""
+if [[ -f "$env_file" ]]; then
+  autocommit_flag="$(awk -F'=' '/^[[:space:]]*autocommiting[[:space:]]*=/{sub(/^[[:space:]]*autocommiting[[:space:]]*=/, ""); print; exit}' "$env_file" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]' | tr -d '"'"'")"
+fi
+
+if [[ "$autocommit_flag" != "TRUE" ]]; then
+  exit 0
+fi
+
 if [[ $# -eq 0 ]]; then
   # Revert the most recent commit with a new commit (safe, non-destructive).
   git revert --no-edit HEAD

@@ -52,7 +52,7 @@ if [[ -f "$GCP_INFRA" ]]; then
   gcp_arch=$(read_setting "$GCP_INFRA" "Target Architecture")
 fi
 
-build_image_name="${aws_app_image:-${gcp_app_image:-battletris-server}}"
+build_image_name="${aws_app_image:-${gcp_app_image:-AA2-server}}"
 build_arch="${aws_arch:-${gcp_arch:-linux/amd64}}"
 
 if [[ -n "$aws_account" && -n "$aws_region" || -n "$gcp_project" && -n "$gcp_region" && -n "$gcp_repo" ]]; then
