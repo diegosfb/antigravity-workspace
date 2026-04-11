@@ -3,9 +3,8 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ACTIVE_ENV_FILE="$PROJECT_ROOT/.agent/.active_env"
 ENV_CONFIG_FILE=""
-CONFIG_FILE="$PROJECT_ROOT/config/Infrastructure/aws.yaml"
+CONFIG_FILE="$PROJECT_ROOT/config/Infrastructure/gcp.yaml"
 
 read_setting() {
   local file="$1"
@@ -14,10 +13,12 @@ read_setting() {
 }
 
 resolve_infra_file() {
-  if [[ -f "$ACTIVE_ENV_FILE" ]]; then
-    local env
-    env="$(tr '[:upper:]' '[:lower:]' < "$ACTIVE_ENV_FILE" | tr -d '\n')"
-    ENV_CONFIG_FILE="$PROJECT_ROOT/config/${env}.yaml"
+  local env=""
+  if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    env="$(grep -E '^NODE_ENV=' "$PROJECT_ROOT/.env" | cut -d'=' -f2 | tr '[:upper:]' '[:lower:]' | tr -d '\n')"
+  fi
+  if [[ -n "$env" ]]; then
+    ENV_CONFIG_FILE="$PROJECT_ROOT/config/${env}-settings.yaml"
     if [[ -f "$ENV_CONFIG_FILE" ]]; then
       local infra
       infra="$(read_setting "$ENV_CONFIG_FILE" "Infrastructure")"
@@ -34,253 +35,154 @@ resolve_infra_file() {
 
 resolve_infra_file
 
-SERVICE_ARN_DEFAULT=""
+SERVICE_DEFAULT=""
 REGION_DEFAULT=""
-SERVICE_NAME_DEFAULT=""
+PROJECT_DEFAULT=""
 ACCOUNT_DEFAULT=""
 SERVICE_TYPE_DEFAULT=""
 TARGET_ARCH_DEFAULT=""
 
 if [[ -f "$CONFIG_FILE" ]]; then
+  SERVICE_DEFAULT="$(read_setting "$CONFIG_FILE" "Service Name")"
   REGION_DEFAULT="$(read_setting "$CONFIG_FILE" "Region")"
-  SERVICE_NAME_DEFAULT="$(read_setting "$CONFIG_FILE" "Service Name")"
+  PROJECT_DEFAULT="$(read_setting "$CONFIG_FILE" "Project ID")"
   ACCOUNT_DEFAULT="$(read_setting "$CONFIG_FILE" "Account")"
   SERVICE_TYPE_DEFAULT="$(read_setting "$CONFIG_FILE" "Service Type")"
   TARGET_ARCH_DEFAULT="$(read_setting "$CONFIG_FILE" "Target Architecture")"
 fi
 
-SERVICE_ARN="${1:-$SERVICE_ARN_DEFAULT}"
+SERVICE="${1:-$SERVICE_DEFAULT}"
 REGION="${2:-$REGION_DEFAULT}"
+PROJECT="${3:-$PROJECT_DEFAULT}"
 
-if [[ -z "$SERVICE_ARN" && -z "$SERVICE_NAME_DEFAULT" ]]; then
-  echo "Usage: $0 [service-arn] [region]"
+if [[ -z "$SERVICE" || -z "$REGION" || -z "$PROJECT" ]]; then
+  echo "Error: Missing service name, region, or project ID. Provide arguments or configure $CONFIG_FILE."
   exit 1
 fi
 
-if [[ -z "$REGION" ]]; then
-  echo "Error: Missing region. Provide an argument or configure $CONFIG_FILE."
+if ! command -v gcloud >/dev/null 2>&1; then
+  echo "Error: gcloud CLI not found. Install and authenticate before running this script."
   exit 1
 fi
 
-if [[ -z "$SERVICE_ARN" && -n "$SERVICE_NAME_DEFAULT" ]]; then
-  SERVICE_ARN=$(aws apprunner list-services \
-    --region "$REGION" \
-    --query "ServiceSummaryList[?ServiceName=='${SERVICE_NAME_DEFAULT}'].ServiceArn | [0]" \
-    --output text)
+describe_cmd=(gcloud run services describe "$SERVICE" --region "$REGION" --format json)
+if [[ -n "$PROJECT" ]]; then
+  describe_cmd+=(--project "$PROJECT")
 fi
 
-if [[ -z "$SERVICE_ARN" || "$SERVICE_ARN" == "None" ]]; then
-  echo "Error: Unable to resolve App Runner service ARN. Provide it as an argument or check $CONFIG_FILE."
+tmp_json="$(mktemp -t check-gcp-deployment.XXXXXX)"
+tmp_err="$(mktemp -t check-gcp-deployment.err.XXXXXX)"
+
+if ! "${describe_cmd[@]}" --quiet > "$tmp_json" 2> "$tmp_err"; then
+  echo "Error: gcloud run services describe failed."
+  cat "$tmp_err"
+  rm -f "$tmp_json" "$tmp_err"
   exit 1
 fi
 
-service_status=""
-service_url=""
-updated_at=""
-service_name=""
-latest_status=""
-latest_type=""
-latest_id=""
-latest_started=""
-
-fetch_service() {
-  service_status=$(aws apprunner describe-service \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --query "Service.Status" \
-    --output text)
-
-  service_url=$(aws apprunner describe-service \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --query "Service.ServiceUrl" \
-    --output text)
-
-  updated_at=$(aws apprunner describe-service \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --query "Service.UpdatedAt" \
-    --output text)
-
-  service_name=$(aws apprunner describe-service \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --query "Service.ServiceName" \
-    --output text)
-}
-
-fetch_latest_operation() {
-  latest_status=$(aws apprunner list-operations \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --max-results 1 \
-    --query "OperationSummaryList[0].Status" \
-    --output text)
-
-  latest_type=$(aws apprunner list-operations \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --max-results 1 \
-    --query "OperationSummaryList[0].Type" \
-    --output text)
-
-  latest_id=$(aws apprunner list-operations \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --max-results 1 \
-    --query "OperationSummaryList[0].Id" \
-    --output text)
-
-  latest_started=$(aws apprunner list-operations \
-    --region "$REGION" \
-    --service-arn "$SERVICE_ARN" \
-    --max-results 1 \
-    --query "OperationSummaryList[0].StartedAt" \
-    --output text)
-}
-
-print_context() {
-  if [[ -n "$SERVICE_TYPE_DEFAULT" ]]; then
-    echo "Service type: $SERVICE_TYPE_DEFAULT"
+if [[ ! -s "$tmp_json" ]]; then
+  echo "Error: gcloud returned an empty response."
+  if [[ -s "$tmp_err" ]]; then
+    cat "$tmp_err"
   fi
-  if [[ -n "$ACCOUNT_DEFAULT" ]]; then
-    echo "Account: $ACCOUNT_DEFAULT"
-  fi
-  if [[ -n "$TARGET_ARCH_DEFAULT" ]]; then
-    echo "Target architecture: $TARGET_ARCH_DEFAULT"
-  fi
-}
-is_failed_or_rolled_back() {
-  if [[ "$latest_status" == "FAILED" || "$latest_status" == *"ROLLBACK"* ]]; then
-    return 0
-  fi
-  return 1
-}
-
-fetch_logs() {
-  local service_id
-  local log_groups
-  local matched_group
-  local log_stream
-
-  service_id="${SERVICE_ARN##*/}"
-
-  echo "Fetching recent App Runner logs..."
-  if ! log_groups=$(aws logs describe-log-groups \
-    --region "$REGION" \
-    --log-group-name-prefix "/aws/apprunner" \
-    --query "logGroups[].logGroupName" \
-    --output text); then
-    echo "Failed to fetch log groups."
-    return
-  fi
-
-  matched_group=$(echo "$log_groups" | tr '\t' '\n' | grep -E -m 1 -e "$service_id" -e "$service_name" || true)
-  if [[ -z "$matched_group" ]]; then
-    echo "No App Runner log group found for service ${service_name} (${service_id})."
-    return
-  fi
-
-  if ! log_stream=$(aws logs describe-log-streams \
-    --region "$REGION" \
-    --log-group-name "$matched_group" \
-    --order-by LastEventTime \
-    --descending \
-    --max-items 1 \
-    --query "logStreams[0].logStreamName" \
-    --output text); then
-    echo "Failed to fetch log streams for ${matched_group}."
-    return
-  fi
-
-  if [[ -z "$log_stream" || "$log_stream" == "None" ]]; then
-    echo "No log streams found for ${matched_group}."
-    return
-  fi
-
-  echo "Log group: ${matched_group}"
-  echo "Log stream: ${log_stream}"
-  aws logs get-log-events \
-    --region "$REGION" \
-    --log-group-name "$matched_group" \
-    --log-stream-name "$log_stream" \
-    --limit 50 \
-    --query "events[].message" \
-    --output text | tr '\t' '\n'
-}
-
-poll_until_running() {
-  echo "Deployment in progress. Polling every 30 seconds until the service is running."
-  echo "Service status: $service_status"
-  echo "Latest operation: $latest_type ($latest_id)"
-  echo "Latest operation status: $latest_status"
-  echo "Started at: $latest_started"
-  echo "Service URL: https://$service_url"
-  print_context
-
-  while true; do
-    aws apprunner list-operations \
-      --region "$REGION" \
-      --service-arn "$SERVICE_ARN" \
-      --max-results 1
-
-    fetch_service
-    fetch_latest_operation
-
-    if is_failed_or_rolled_back; then
-      echo "Deployment failed or rolled back."
-      echo "Service status: $service_status"
-      echo "Latest operation: $latest_type ($latest_id)"
-      echo "Latest operation status: $latest_status"
-      print_context
-      fetch_logs
-      exit 1
-    fi
-
-    if [[ "$service_status" == "RUNNING" && "$latest_status" != "IN_PROGRESS" ]]; then
-      echo "Service is running."
-      echo "Latest operation: $latest_type ($latest_id)"
-      echo "Latest operation status: $latest_status"
-      echo "Service updated at: $updated_at"
-      echo "Service URL: https://$service_url"
-      print_context
-      exit 0
-    fi
-
-    sleep 30
-  done
-}
-
-fetch_service
-fetch_latest_operation
-
-if [[ "$latest_status" == "IN_PROGRESS" || "$service_status" == "OPERATION_IN_PROGRESS" ]]; then
-  poll_until_running
-fi
-
-if [[ "$service_status" == "RUNNING" ]]; then
-  echo "Service is running."
-  echo "Latest operation: $latest_type ($latest_id)"
-  echo "Latest operation status: $latest_status"
-  echo "Service updated at: $updated_at"
-  echo "Service URL: https://$service_url"
-  print_context
-  exit 0
-fi
-
-if is_failed_or_rolled_back; then
-  echo "Deployment failed or rolled back."
-  echo "Service status: $service_status"
-  echo "Latest operation: $latest_type ($latest_id)"
-  echo "Latest operation status: $latest_status"
-  print_context
-  fetch_logs
+  rm -f "$tmp_json" "$tmp_err"
   exit 1
 fi
 
-echo "Service status: $service_status"
-echo "Latest operation: $latest_type ($latest_id)"
-echo "Latest operation status: $latest_status"
-echo "Service URL: https://$service_url"
-print_context
-exit 1
+first_char="$(head -c 1 "$tmp_json")"
+if [[ "$first_char" != "{" && "$first_char" != "[" ]]; then
+  echo "Error: gcloud returned non-JSON output."
+  head -n 20 "$tmp_json"
+  if [[ -s "$tmp_err" ]]; then
+    cat "$tmp_err"
+  fi
+  rm -f "$tmp_json" "$tmp_err"
+  exit 1
+fi
+
+python3 - "$SERVICE" "$REGION" "$PROJECT" "$tmp_json" "$ACCOUNT_DEFAULT" "$SERVICE_TYPE_DEFAULT" "$TARGET_ARCH_DEFAULT" <<'PY'
+import json
+import sys
+
+service = sys.argv[1]
+region = sys.argv[2]
+project = sys.argv[3]
+path = sys.argv[4]
+account = sys.argv[5]
+service_type = sys.argv[6]
+target_arch = sys.argv[7]
+with open(path, "r", encoding="utf-8") as handle:
+    data = json.load(handle)
+
+def dig(obj, *keys):
+    cur = obj
+    for key in keys:
+        if isinstance(cur, dict) and key in cur:
+            cur = cur[key]
+        else:
+            return None
+    return cur
+
+url = dig(data, "status", "url") or dig(data, "status", "address", "url")
+ready_revision = dig(data, "status", "latestReadyRevisionName") or dig(data, "status", "latestReadyRevision")
+conditions = dig(data, "status", "conditions") or []
+
+ready_status = None
+for condition in conditions:
+    if condition.get("type") in ("Ready", "RoutesReady"):
+        ready_status = condition.get("status")
+        break
+
+annotations = {}
+for path in (
+    ("metadata", "annotations"),
+    ("spec", "template", "metadata", "annotations"),
+    ("template", "metadata", "annotations"),
+):
+    ann = dig(data, *path)
+    if isinstance(ann, dict):
+        annotations.update(ann)
+
+source_candidates = []
+for key in (
+    "run.googleapis.com/source-location",
+    "run.googleapis.com/source",
+    "run.googleapis.com/build-repo",
+    "run.googleapis.com/build-source",
+):
+    val = annotations.get(key)
+    if val:
+        source_candidates.append(str(val))
+
+build_config = dig(data, "buildConfig") or dig(data, "spec", "buildConfig")
+if isinstance(build_config, dict):
+    for key in ("sourceLocation", "repository", "source", "repo"):
+        val = build_config.get(key)
+        if val:
+            source_candidates.append(str(val))
+
+github_links = [val for val in source_candidates if "github.com" in val.lower()]
+
+print(f"Service: {service}")
+print(f"Region: {region}")
+print(f"Project: {project}")
+if service_type:
+    print(f"Service type: {service_type}")
+if account:
+    print(f"Account: {account}")
+if target_arch:
+    print(f"Target architecture: {target_arch}")
+if url:
+    print(f"URL: {url}")
+if ready_revision:
+    print(f"Latest ready revision: {ready_revision}")
+if ready_status is not None:
+    print(f"Ready status: {ready_status}")
+
+if github_links:
+    print(f"Note: GitHub link detected for Cloud Run service: {github_links[0]}")
+else:
+    print("Note: No GitHub link detected in Cloud Run service metadata. GitHub pushes may not auto-deploy.")
+PY
+
+rm -f "$tmp_json" "$tmp_err"
