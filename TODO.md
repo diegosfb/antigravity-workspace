@@ -1,1 +1,3 @@
-# TODO\n\n- [ ] Initial setup\n
+# TODO
+
+- [x] Initial setup

@@ -2,7 +2,7 @@
 
 This is a **production-ready AI coding plugin** providing 13 specialized agents, 24 skills, 7 workflows and 11 rules for software development.
 
-**Version:** Not specified in `/Users/diego.brihuega/.antigravity`.
+**Version:** v0.0.2
 
 ## Core Principles
 
