@@ -51,6 +51,9 @@ else
   echo "Committed workspace changes."
 fi
 
+# Pull remote changes first to avoid rejected pushes
+git pull --rebase origin main 2>/dev/null || git pull --rebase origin main
+
 # Push to the antigravity-workspace repo
 git push -u origin main
 echo "workspace/ pushed to $REMOTE_URL"
