@@ -6,6 +6,9 @@ Usage:
   ./scripts/autocommit_changes.py stop
 
 Each detected change is committed and pushed to the configured remote.
+
+11
+
 """
 
 import os
