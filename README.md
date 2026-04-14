@@ -1,8 +1,8 @@
-# Antigravity workspace Initial Setup
-https://github.com/diegosfb/antigravity-workspace
+Project level Agentic platform configuration
 
-This includes
-- Symbolic links to all the agents folder where the Agents, Skills, Rules & Workflows live
-- Github actions folder (.github/workflows)
-- Config with infrastructure and environment settings & config
-- Standard workspace sripts library
+- Agents
+- Skills
+- Rules
+- Workflows
+
+
